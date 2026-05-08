@@ -100,10 +100,28 @@ export default function SetupForm() {
     setPhotoPreviewUrl(URL.createObjectURL(f));
   };
 
-  const onSubmit = async (data) => {
+  // Auto-normalize URL-ish fields users pasted without a protocol.
+  // "linkedin.com/in/me" -> "https://linkedin.com/in/me"
+  const normalizeUrl = (v) => {
+    if (!v) return "";
+    const trimmed = v.trim();
+    if (!trimmed) return "";
+    if (/^https?:\/\//i.test(trimmed)) return trimmed;
+    return "https://" + trimmed.replace(/^\/+/, "");
+  };
+
+  const onSubmit = async (rawData) => {
     setGenerating(true);
     setDone(false);
     try {
+      const data = {
+        ...rawData,
+        linkedin: normalizeUrl(rawData.linkedin),
+        githubProfile: normalizeUrl(rawData.githubProfile),
+        metaBaseUrl: normalizeUrl(rawData.metaBaseUrl) || "https://example.com",
+        githubOwner: rawData.githubOwner || "your-github-username",
+        githubRepo: rawData.githubRepo || "your-wiki-repo",
+      };
       const blob = await generateZip(data, { pdfFile, photoFile });
       const zipName = (data.siteName || "yourpedia").toLowerCase().replace(/[^a-z0-9]/g, "");
       triggerDownload(blob, `${zipName}-${data.homepageSlug}.zip`);
@@ -248,45 +266,59 @@ export default function SetupForm() {
           )}
         </div>
 
-        <div className="setup-field">
-          <label className="setup-label setup-label-required">Site URL</label>
+      </div>
+
+      {/* Advanced — collapsed by default. The fields here all need to
+          be filled AFTER deploy (Site URL only exists once Vercel has
+          assigned one; GitHub owner/repo only exist once you've pushed
+          your wiki to GitHub). Hidden by default so users don't get
+          stuck on chicken-and-egg fields on first run. */}
+      <details className="setup-advanced">
+        <summary>
+          <span className="setup-advanced-title">
+            Advanced — fill after deploy
+          </span>
+          <span className="setup-advanced-hint">
+            Site URL · GitHub repo · all optional. Skip for now and edit
+            <code> site.config.js </code> after your first deploy.
+          </span>
+        </summary>
+
+        <div className="setup-field" style={{ marginTop: 14 }}>
+          <label className="setup-label">Site URL</label>
           <input
             {...register("metaBaseUrl")}
             className="setup-input"
-            placeholder="https://your-site.vercel.app"
+            placeholder="your-site.vercel.app"
           />
           <div className="setup-help">
-            Where your site will live after deploy. Use the Vercel preview
-            URL if you don't have a custom domain yet.
+            Where your site will live after deploy. Leave empty if you
+            haven't deployed yet — we'll insert a placeholder you can
+            update later in <code>site.config.js</code>.
           </div>
           {errors.metaBaseUrl && (
             <div className="setup-error">{errors.metaBaseUrl.message}</div>
           )}
         </div>
-      </div>
-
-      {/* GitHub */}
-      <div className="setup-section">
-        <h2 className="setup-section-heading">GitHub</h2>
 
         <div className="setup-field-row">
           <div className="setup-field">
-            <label className="setup-label setup-label-required">Owner</label>
+            <label className="setup-label">GitHub owner</label>
             <input
               {...register("githubOwner")}
               className="setup-input"
-              placeholder="janedoe"
+              placeholder="your-github-username"
             />
             {errors.githubOwner && (
               <div className="setup-error">{errors.githubOwner.message}</div>
             )}
           </div>
           <div className="setup-field">
-            <label className="setup-label setup-label-required">Repo</label>
+            <label className="setup-label">GitHub repo</label>
             <input
               {...register("githubRepo")}
               className="setup-input"
-              placeholder="janedoe-wiki"
+              placeholder="your-wiki-repo"
             />
             {errors.githubRepo && (
               <div className="setup-error">{errors.githubRepo.message}</div>
@@ -294,10 +326,11 @@ export default function SetupForm() {
           </div>
         </div>
         <div className="setup-help">
-          Drives the "View source / Talk / History" links on every wiki
-          page. Use the fork name you'll create in step 1 of the README.
+          Drives the "View source / Talk / History" links at the top of
+          every wiki page. Set after you create the GitHub repo for
+          your wiki.
         </div>
-      </div>
+      </details>
 
       {/* Contact */}
       <div className="setup-section">
@@ -316,23 +349,27 @@ export default function SetupForm() {
         </div>
 
         <div className="setup-field">
-          <label className="setup-label">LinkedIn URL</label>
+          <label className="setup-label">LinkedIn</label>
           <input
             {...register("linkedin")}
             className="setup-input"
-            placeholder="https://www.linkedin.com/in/janedoe/"
+            placeholder="linkedin.com/in/janedoe"
           />
+          <div className="setup-help">
+            Paste your profile URL or just the handle path. We&apos;ll
+            add <code>https://</code> for you if it&apos;s missing.
+          </div>
           {errors.linkedin && (
             <div className="setup-error">{errors.linkedin.message}</div>
           )}
         </div>
 
         <div className="setup-field">
-          <label className="setup-label">GitHub profile URL</label>
+          <label className="setup-label">GitHub profile</label>
           <input
             {...register("githubProfile")}
             className="setup-input"
-            placeholder="https://github.com/janedoe"
+            placeholder="github.com/janedoe"
           />
           {errors.githubProfile && (
             <div className="setup-error">{errors.githubProfile.message}</div>

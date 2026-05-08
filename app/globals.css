@@ -739,6 +739,58 @@ ol.references li { margin-bottom: 4px; }
   color: var(--wiki-text-soft);
 }
 
+/* ===== Advanced (collapsed) section ===== */
+
+.setup-advanced {
+  border-top: 1px solid var(--wiki-border-light);
+  padding: 14px 0 4px;
+  margin-top: 24px;
+}
+.setup-advanced > summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 0;
+  user-select: none;
+}
+.setup-advanced > summary::-webkit-details-marker { display: none; }
+.setup-advanced > summary::before {
+  content: "\25B8";  /* ▸ */
+  display: inline-block;
+  width: 14px;
+  color: var(--wiki-text-soft);
+  transition: transform 0.15s ease;
+}
+.setup-advanced[open] > summary::before {
+  transform: rotate(90deg);
+}
+.setup-advanced-title {
+  display: inline;
+  font-family: var(--font-serif);
+  font-size: 1.2em;
+  font-weight: 700;
+  color: var(--wiki-text);
+}
+.setup-advanced-hint {
+  display: block;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  color: var(--wiki-text-soft);
+  margin-left: 18px;
+  line-height: 1.45;
+}
+.setup-advanced-hint code {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  background: var(--wiki-bg-alt);
+  padding: 0 3px;
+}
+.setup-advanced[open] {
+  padding-bottom: 14px;
+}
+
 /* Print — when user prints the page as a PDF, it should still look like Wikipedia */
 @media print {
   .wiki-topbar, .wiki-tabs, .wiki-sidebar, .edit-link, .wiki-footer { display: none; }
