@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { setupSchema, deriveSlug } from "../lib/schema";
 import { generateZip, triggerDownload } from "../lib/generator";
 import UploadPanel from "./UploadPanel";
+import PreviewModal from "./PreviewModal";
 
 export default function SetupForm() {
   const [generating, setGenerating] = useState(false);
@@ -14,6 +15,8 @@ export default function SetupForm() {
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreviewUrl, setPhotoPreviewUrl] = useState("");
   const [photoError, setPhotoError] = useState("");
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewData, setPreviewData] = useState(null);
 
   const {
     register,
@@ -429,15 +432,32 @@ export default function SetupForm() {
 
       {/* Submit */}
       <div className="setup-section" style={{ marginTop: 36 }}>
-        <button
-          type="submit"
-          disabled={generating}
-          className="setup-button-primary"
-        >
-          {generating
-            ? "Generating…"
-            : "Generate my wiki (download zip)"}
-        </button>
+        <div className="setup-submit-row">
+          <button
+            type="button"
+            onClick={() => {
+              const current = watch();
+              setPreviewData({
+                ...current,
+                linkedin: normalizeUrl(current.linkedin),
+                githubProfile: normalizeUrl(current.githubProfile),
+              });
+              setPreviewOpen(true);
+            }}
+            className="setup-button setup-button-secondary"
+          >
+            Preview wiki
+          </button>
+          <button
+            type="submit"
+            disabled={generating}
+            className="setup-button-primary"
+          >
+            {generating
+              ? "Generating…"
+              : "Generate my wiki (download zip)"}
+          </button>
+        </div>
         {done && (
           <div className="setup-success">
             Zip downloaded. See README.md inside for the 5-step deploy
@@ -445,6 +465,14 @@ export default function SetupForm() {
           </div>
         )}
       </div>
+
+      {previewOpen && previewData && (
+        <PreviewModal
+          data={previewData}
+          photoPreviewUrl={photoPreviewUrl}
+          onClose={() => setPreviewOpen(false)}
+        />
+      )}
     </form>
   );
 }
