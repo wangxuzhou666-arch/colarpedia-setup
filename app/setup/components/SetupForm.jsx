@@ -27,9 +27,12 @@ export default function SetupForm() {
     mode: "onBlur",
     defaultValues: {
       name: "",
+      name_zh: "",
       homepageSlug: "",
       tagline: "",
+      tagline_zh: "",
       bio: "",
+      bio_zh: "",
       siteName: "Yourpedia",
       metaBaseUrl: "",
       githubOwner: "",

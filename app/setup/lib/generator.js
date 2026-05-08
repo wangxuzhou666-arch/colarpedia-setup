@@ -94,14 +94,27 @@ export async function generateZip(data, files = {}) {
   zip.file("site.config.js", siteConfigTemplate(data));
   zip.file(
     `wiki/${data.homepageSlug}.md`,
-    wikiPageTemplate(data, { photoPath })
+    wikiPageTemplate(data, { photoPath, lang: "en" })
   );
+  // Always emit a Chinese mirror — the wiki renderer will fall back to
+  // the English file if .zh.md is missing, but having it pre-populated
+  // means /zh/wiki/<Slug>/ shows real content from day one.
+  const hasZhContent =
+    !!(data.bio_zh || data.tagline_zh || data.name_zh) ||
+    (data.shipped || []).some((s) => s.description_zh);
+  if (hasZhContent) {
+    zip.file(
+      `wiki/${data.homepageSlug}.zh.md`,
+      wikiPageTemplate(data, { photoPath, lang: "zh" })
+    );
+  }
   zip.file(
     "README.md",
     readmeTemplate(data, {
       hasPhoto: !!photoPath,
       hasOriginalPdf: !!files.pdfFile,
       includesTemplate: bundleStats.included > 0,
+      hasChinese: hasZhContent,
     })
   );
 

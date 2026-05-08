@@ -9,9 +9,12 @@ const MAX_PDF_BYTES = 5 * 1024 * 1024; // 5 MB
 
 const FORM_FIELDS = [
   "name",
+  "name_zh",
   "homepageSlug",
   "tagline",
+  "tagline_zh",
   "bio",
+  "bio_zh",
   "siteName",
   "metaBaseUrl",
   "githubOwner",
@@ -116,6 +119,7 @@ export default function UploadPanel({
           data.shipped.map((s) => ({
             name: s.name || "",
             description: s.description || "",
+            description_zh: s.description_zh || "",
           }))
         );
       }

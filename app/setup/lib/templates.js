@@ -69,24 +69,36 @@ export default siteConfig;
 `;
 }
 
-export function wikiPageTemplate(data, { photoPath } = {}) {
+export function wikiPageTemplate(data, { photoPath, lang = "en" } = {}) {
+  const isZh = lang === "zh";
+
+  const titleName = isZh && data.name_zh ? data.name_zh : data.name;
+  const tagline =
+    (isZh ? data.tagline_zh : data.tagline) ||
+    (isZh ? "[一句话定位]" : "[your one-line subtitle]");
+  const bio =
+    (isZh ? data.bio_zh : data.bio) ||
+    (isZh
+      ? `用第三人称中文 Wikipedia 风格写。用 [[Project_One]] 语法链接到其他 wiki 页面 — 还没创建的页面会渲染成红链。`
+      : `Write your story in prose, Wikipedia-style. Use the third person. Link to other wiki pages with [[Project_One]] syntax. Pages that don't exist yet render as red links — a Wikipedia convention for "this article is coming."`);
+
   const shippedList = (data.shipped || [])
     .filter((s) => s.name)
-    .map((s) =>
-      s.description
-        ? `- **${s.name}** — ${s.description}`
-        : `- **${s.name}**`
-    )
+    .map((s) => {
+      const desc = isZh ? (s.description_zh || s.description) : s.description;
+      return desc ? `- **${s.name}** — ${desc}` : `- **${s.name}**`;
+    })
     .join("\n");
 
+  const contactSectionLabel = isZh ? "联系方式" : "Contact";
   const contactRows = [];
   if (data.email) {
-    contactRows.push(`    - section: Contact`);
-    contactRows.push(`    - label: Email`);
+    contactRows.push(`    - section: ${contactSectionLabel}`);
+    contactRows.push(`    - label: ${isZh ? "邮箱" : "Email"}`);
     contactRows.push(`      value: ${yamlEscape(data.email)}`);
   }
   if (data.linkedin) {
-    if (!data.email) contactRows.push(`    - section: Contact`);
+    if (!data.email) contactRows.push(`    - section: ${contactSectionLabel}`);
     const display = data.linkedin.replace(/^https?:\/\/(www\.)?/, "");
     contactRows.push(`    - label: LinkedIn`);
     contactRows.push(
@@ -95,7 +107,7 @@ export function wikiPageTemplate(data, { photoPath } = {}) {
   }
   if (data.githubProfile) {
     if (!data.email && !data.linkedin)
-      contactRows.push(`    - section: Contact`);
+      contactRows.push(`    - section: ${contactSectionLabel}`);
     const display = data.githubProfile.replace(/^https?:\/\/(www\.)?/, "");
     contactRows.push(`    - label: GitHub`);
     contactRows.push(
@@ -104,52 +116,70 @@ export function wikiPageTemplate(data, { photoPath } = {}) {
   }
   const contactBlock = contactRows.length ? "\n" + contactRows.join("\n") : "";
 
-  const tagline = data.tagline || "[your one-line subtitle]";
-  const bio =
-    data.bio ||
-    `Write your story in prose, Wikipedia-style. Use the third person. Link to other wiki pages with [[Project_One]] syntax. Pages that don't exist yet render as red links — a Wikipedia convention for "this article is coming."`;
-
   const imageBlock = photoPath
-    ? `\n  image: /${photoPath.replace(/^public\//, "")}\n  image_caption: Photo of ${yamlEscape(data.name)}`
-    : `\n  image_caption: Replace /public/portrait.jpg with your photo`;
+    ? `\n  image: /${photoPath.replace(/^public\//, "")}\n  image_caption: ${isZh ? "照片：" : "Photo of "}${yamlEscape(titleName)}`
+    : `\n  image_caption: ${isZh ? "把你的照片放到 /public/portrait.jpg" : "Replace /public/portrait.jpg with your photo"}`;
+
+  const knownForLabel = isZh ? "以…著称" : "Known for";
+  const description = isZh
+    ? `关于 ${yamlEscape(titleName)} 的人物条目。`
+    : `Biographical article on ${yamlEscape(titleName)}.`;
+
+  // English lead sentence wraps with article ("a"/"an"); Chinese uses 是 + 复读 tagline.
+  const leadSentence = isZh
+    ? `**${titleName}** 是${tagline}。`
+    : `**${titleName}** is ${
+        tagline.toLowerCase().startsWith("a ") ||
+        tagline.toLowerCase().startsWith("an ")
+          ? tagline
+          : `a ${tagline}`
+      }.`;
+
+  const careerHeading = isZh ? "## 生涯" : "## Career";
+  const notableHeading = isZh ? "## 代表作品" : "## Notable works";
+  const seeAlsoHeading = isZh ? "## 参见" : "## See also";
+  const referencesHeading = isZh ? "## 参考文献" : "## References";
+  const referenceFootnote = isZh
+    ? `[^1]: 用真实的引用替换此处。可用 LinkedIn 帖子、App Store 列表、项目 URL、公开发表的文章等。`
+    : `[^1]: Replace this with a real citation. LinkedIn posts, App Store
+listings, product URLs, and published articles all work.`;
 
   return `---
-title: ${yamlEscape(data.name)}
+title: ${yamlEscape(titleName)}
 subtitle: ${yamlEscape(tagline)}
-description: Biographical article on ${yamlEscape(data.name)}.
+description: ${description}
 infobox:
-  title: ${yamlEscape(data.name)}${imageBlock}
+  title: ${yamlEscape(titleName)}${imageBlock}
   rows:
-    - label: Known for
+    - label: ${knownForLabel}
       value: ${yamlEscape(tagline)}${contactBlock}
 ---
 
-**${data.name}** is ${tagline.toLowerCase().startsWith("a ") || tagline.toLowerCase().startsWith("an ") ? tagline : `a ${tagline}`}.
+${leadSentence}
 
-## Career
+${careerHeading}
 
 ${bio}
 
-${
-  shippedList
-    ? `## Notable works\n\n${shippedList}\n`
-    : ""
-}
-## See also
+${shippedList ? `${notableHeading}\n\n${shippedList}\n\n` : ""}${seeAlsoHeading}
 
 - [[Project_One]]
 - [[Your_Company]]
 
-## References
+${referencesHeading}
 
-[^1]: Replace this with a real citation. LinkedIn posts, App Store
-listings, product URLs, and published articles all work.
+${referenceFootnote}
 `;
 }
 
 export function readmeTemplate(
   data,
-  { hasPhoto = false, hasOriginalPdf = false, includesTemplate = false } = {}
+  {
+    hasPhoto = false,
+    hasOriginalPdf = false,
+    includesTemplate = false,
+    hasChinese = false,
+  } = {}
 ) {
   const today = new Date().toISOString().slice(0, 10);
   const siteName = data.siteName || "Yourpedia";
@@ -161,6 +191,9 @@ export function readmeTemplate(
     : "";
   const templateLine = includesTemplate
     ? `- \`app/\`, \`components/\`, \`lib/\`, \`package.json\`, \`next.config.mjs\`, \`CLAUDE.md\`, \`LICENSE\`, etc. — the **complete Next.js template**, ready to run. No GitHub fork required.`
+    : "";
+  const zhLine = hasChinese
+    ? `- \`wiki/${data.homepageSlug}.zh.md\` — Chinese (Simplified) version of your bio. Lives at \`/zh/wiki/${data.homepageSlug}/\` after deploy. Edit it like any markdown file.`
     : "";
 
   const deployBody = includesTemplate
@@ -237,8 +270,8 @@ This zip contains your personal Wikipedia-style résumé site${
 ## What's in this zip
 
 - \`site.config.js\` — your per-site config (siteName, baseUrl, GitHub repo, contact)
-- \`wiki/${data.homepageSlug}.md\` — your main biography page
-${photoLine}
+- \`wiki/${data.homepageSlug}.md\` — your main biography page (English)
+${zhLine ? zhLine + "\n" : ""}${photoLine}
 ${pdfLine ? pdfLine + "\n" : ""}${templateLine ? templateLine + "\n" : ""}- \`README.md\` — this file
 
 ${deployBody}
