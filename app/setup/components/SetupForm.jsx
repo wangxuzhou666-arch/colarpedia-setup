@@ -24,7 +24,12 @@ export default function SetupForm() {
     formState: { errors },
   } = useForm({
     resolver: zodResolver(setupSchema),
-    mode: "onBlur",
+    // onTouched: only validate fields the user has actually interacted
+    // with. Prevents stale errors from sticking around after schema
+    // changes (Phase 1B v2 has been iterating quickly on validation),
+    // and stops LLM-auto-filled fields from being flagged before the
+    // user has even seen them.
+    mode: "onTouched",
     defaultValues: {
       name: "",
       name_zh: "",
