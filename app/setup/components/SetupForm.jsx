@@ -459,9 +459,82 @@ export default function SetupForm() {
           </button>
         </div>
         {done && (
-          <div className="setup-success">
-            Zip downloaded. See README.md inside for the 5-step deploy
-            instructions.
+          <div className="deploy-card">
+            <div className="deploy-card-title">
+              ✓ Zip downloaded — now put your wiki on the internet
+            </div>
+            <p className="deploy-card-lede">
+              The zip is a complete Next.js project. Three short steps and
+              you have a live URL.
+            </p>
+
+            <ol className="deploy-steps">
+              <li>
+                <strong>Unzip</strong> the file you just downloaded. Open the
+                folder in your terminal.
+              </li>
+              <li>
+                <strong>Create a new GitHub repo</strong> at{" "}
+                <a
+                  href="https://github.com/new"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="deploy-card-link"
+                >
+                  github.com/new
+                </a>{" "}
+                (any name; don&apos;t initialize with a README).
+              </li>
+              <li>
+                <strong>Push the folder</strong> to that repo. Paste this in
+                your terminal (replace{" "}
+                <code>YOUR-USERNAME</code> and <code>YOUR-REPO</code>):
+                <pre className="deploy-cmd">
+{`git init
+git add .
+git commit -m "Initial setup via Yourpedia"
+git branch -M main
+git remote add origin https://github.com/YOUR-USERNAME/YOUR-REPO.git
+git push -u origin main`}
+                </pre>
+              </li>
+              <li>
+                <strong>Deploy on Vercel</strong> — click the button below,
+                sign in (free), pick the repo you just pushed, hit Deploy.
+                Vercel auto-detects Next.js. ~30 seconds.
+                <div style={{ marginTop: 10 }}>
+                  <a
+                    href="https://vercel.com/new"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="deploy-vercel-button"
+                  >
+                    Open Vercel → Deploy my repo
+                  </a>
+                </div>
+              </li>
+            </ol>
+
+            <div className="deploy-card-aside">
+              <strong>No GitHub?</strong> You can also drag the unzipped
+              folder onto{" "}
+              <a
+                href="https://vercel.com/new"
+                target="_blank"
+                rel="noreferrer"
+                className="deploy-card-link"
+              >
+                vercel.com/new
+              </a>
+              {" "}— click &quot;Browse&quot; and select the folder. No git
+              required, but you won&apos;t be able to update the wiki later
+              without re-uploading the whole folder.
+            </div>
+
+            <div className="deploy-card-aside">
+              Full step-by-step (with troubleshooting) is also in{" "}
+              <code>README.md</code> inside the zip.
+            </div>
           </div>
         )}
       </div>

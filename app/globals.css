@@ -905,6 +905,93 @@ ol.references li { margin-bottom: 4px; }
   background: var(--wiki-bg-alt);
 }
 
+/* ===== Deploy card (post-generate next-step guide) ===== */
+
+.deploy-card {
+  margin-top: 14px;
+  border: 1px solid var(--wiki-border);
+  background: var(--wiki-bg-alt);
+  padding: 18px 20px 22px;
+}
+.deploy-card-title {
+  font-family: var(--font-serif);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--wiki-text);
+  margin-bottom: 4px;
+}
+.deploy-card-lede {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--wiki-text-soft);
+  margin: 0 0 14px;
+}
+.deploy-steps {
+  margin: 0 0 14px;
+  padding-left: 22px;
+  font-family: var(--font-serif);
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: var(--wiki-text);
+}
+.deploy-steps li { margin-bottom: 12px; }
+.deploy-steps li strong { font-weight: 700; }
+.deploy-steps code {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  background: var(--wiki-bg);
+  border: 1px solid var(--wiki-border-light);
+  padding: 1px 4px;
+}
+.deploy-cmd {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.45;
+  background: var(--wiki-bg);
+  border: 1px solid var(--wiki-border-light);
+  padding: 10px 12px;
+  margin: 8px 0 0;
+  white-space: pre;
+  overflow-x: auto;
+  color: var(--wiki-text);
+}
+.deploy-card-link {
+  color: var(--wiki-link);
+}
+.deploy-card-link:hover { text-decoration: underline; }
+
+.deploy-vercel-button {
+  display: inline-block;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 700;
+  padding: 9px 16px;
+  background: #0a0a0a;
+  color: #ffffff !important;
+  border: 1px solid #0a0a0a;
+  text-decoration: none;
+}
+.deploy-vercel-button:hover {
+  background: #18181b;
+  text-decoration: none;
+}
+
+.deploy-card-aside {
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  color: var(--wiki-text-soft);
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--wiki-border-light);
+  line-height: 1.5;
+}
+.deploy-card-aside code {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  background: var(--wiki-bg);
+  padding: 0 3px;
+}
+
 /* Print — when user prints the page as a PDF, it should still look like Wikipedia */
 @media print {
   .wiki-topbar, .wiki-tabs, .wiki-sidebar, .edit-link, .wiki-footer { display: none; }
