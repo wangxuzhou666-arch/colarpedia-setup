@@ -8,6 +8,42 @@ import {
   readmeTemplate,
 } from "./templates";
 
+// Lazy fetch + cache the template bundle JSON (build-time snapshot of
+// the colarpedia-template repo). Lets users get a fully-runnable Next.js
+// app in their zip — no GitHub fork, no manual file copying.
+let _templateBundleCache = null;
+async function loadTemplateBundle() {
+  if (_templateBundleCache) return _templateBundleCache;
+  try {
+    const res = await fetch("/template-bundle.json");
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    _templateBundleCache = await res.json();
+    return _templateBundleCache;
+  } catch (e) {
+    console.warn("[generator] template bundle unavailable:", e.message);
+    return null;
+  }
+}
+
+function base64ToUint8Array(b64) {
+  const bin = atob(b64);
+  const arr = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+  return arr;
+}
+
+// Files we'll OVERRIDE with user's generated content. These already
+// have a path-clash with the bundle — skip them from the bundle so the
+// generator's own output wins.
+const TEMPLATE_OVERRIDES = new Set([
+  "site.config.js",
+  "README.md",
+  "wiki/Jane_Doe.md",
+  "wiki/Jane_Doe.zh.md",
+  "wiki/index.md",
+  "wiki/log.md",
+]);
+
 const PHOTO_EXT_BY_TYPE = {
   "image/jpeg": "jpg",
   "image/jpg": "jpg",
@@ -38,6 +74,23 @@ export async function generateZip(data, files = {}) {
   const photoExt = photoExtension(files.photoFile);
   const photoPath = photoExt ? `public/portrait.${photoExt}` : null;
 
+  // 1. Layer the template bundle in first so user-generated files can override.
+  const bundle = await loadTemplateBundle();
+  let bundleStats = { included: 0, skipped: 0 };
+  if (bundle && Array.isArray(bundle.files)) {
+    for (const f of bundle.files) {
+      if (TEMPLATE_OVERRIDES.has(f.path)) {
+        bundleStats.skipped += 1;
+        continue;
+      }
+      const data8 = base64ToUint8Array(f.content);
+      // JSZip handles binary vs text the same way for Uint8Array.
+      zip.file(f.path, data8);
+      bundleStats.included += 1;
+    }
+  }
+
+  // 2. User-generated files (these win over any same-path bundle entry).
   zip.file("site.config.js", siteConfigTemplate(data));
   zip.file(
     `wiki/${data.homepageSlug}.md`,
@@ -45,7 +98,11 @@ export async function generateZip(data, files = {}) {
   );
   zip.file(
     "README.md",
-    readmeTemplate(data, { hasPhoto: !!photoPath, hasOriginalPdf: !!files.pdfFile })
+    readmeTemplate(data, {
+      hasPhoto: !!photoPath,
+      hasOriginalPdf: !!files.pdfFile,
+      includesTemplate: bundleStats.included > 0,
+    })
   );
 
   if (files.photoFile && photoPath) {
