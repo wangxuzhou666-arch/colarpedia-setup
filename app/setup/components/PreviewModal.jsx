@@ -20,11 +20,18 @@ function stripFrontmatter(md) {
 // real wiki pages to point at, so all wikilinks render as redlinks
 // (the same Wikipedia convention the live site uses).
 function preprocessWikiLinks(body) {
+  // Render [[Slug]] / [[Slug|Display]] as redlink spans (not anchors).
+  // We use <span> instead of <a> because:
+  //   1. Preview has no real wiki pages to link to (everything is "future").
+  //   2. rehype-raw / React strip lowercase onclick handlers, so an
+  //      anchor would either navigate to "#" or not work at all.
+  //   3. <span class="redlink"> reads identically — same Wikipedia
+  //      convention, no broken click behavior.
   return body.replace(
     /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g,
     (_, target, label) => {
       const display = (label || target).trim();
-      return `<a href="#" class="redlink" onclick="event.preventDefault()">${display}</a>`;
+      return `<span class="redlink">${display}</span>`;
     }
   );
 }

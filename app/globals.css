@@ -51,7 +51,15 @@ a {
 }
 a:visited { color: var(--wiki-link-visited); }
 a:hover { text-decoration: underline; }
-a.redlink { color: var(--wiki-link-red); }
+/* .redlink works on both <a> (live wiki) and <span> (preview modal,
+   where there are no real link targets). */
+a.redlink, span.redlink {
+  color: var(--wiki-link-red);
+  text-decoration: none;
+}
+span.redlink {
+  cursor: default;
+}
 a.external::after {
   content: "";
   display: inline-block;
