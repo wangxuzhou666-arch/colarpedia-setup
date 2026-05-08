@@ -32,9 +32,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
       return token;
     },
-    // Expose what the client UI needs (login name) but never the
-    // raw access_token. The token stays server-side, accessed via
-    // auth() helper inside route handlers.
+    // Expose what the client UI needs (login name + auth flag).
+    // Server routes use getToken(req) directly to read the raw
+    // access_token without round-tripping it through the client.
     async session({ session, token }) {
       if (session.user) {
         session.user.githubLogin = token.githubLogin;

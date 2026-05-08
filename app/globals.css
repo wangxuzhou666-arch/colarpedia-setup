@@ -992,6 +992,148 @@ ol.references li { margin-bottom: 4px; }
   padding: 0 3px;
 }
 
+/* ===== Phase 1C — One-click GitHub deploy ===== */
+
+.deploy-block {
+  border-top: 2px solid var(--wiki-border);
+  padding-top: 22px;
+  margin-top: 28px;
+}
+
+.deploy-github-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 700;
+  padding: 10px 18px;
+  background: #0a0a0a;
+  color: #ffffff;
+  border: 1px solid #0a0a0a;
+  cursor: pointer;
+  border-radius: 0;
+}
+.deploy-github-button:hover {
+  background: #18181b;
+}
+
+.deploy-signed-in {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--wiki-text-soft);
+  margin-bottom: 12px;
+}
+.deploy-signed-in strong {
+  font-family: var(--font-mono);
+  color: var(--wiki-text);
+  font-weight: 700;
+}
+.deploy-signout-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  color: var(--wiki-link);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.deploy-action-button {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 700;
+  padding: 10px 18px;
+  background: var(--wiki-bg-chrome);
+  color: var(--wiki-text);
+  border: 1px solid var(--wiki-border-darker);
+  cursor: pointer;
+  border-radius: 0;
+  width: 100%;
+}
+.deploy-action-button:hover {
+  background: var(--wiki-bg-alt);
+}
+
+.deploy-progress {
+  border: 1px solid var(--wiki-border);
+  background: var(--wiki-bg-alt);
+  padding: 14px 16px;
+}
+.deploy-step {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--wiki-text-soft);
+  padding: 6px 0;
+  border-bottom: 1px solid var(--wiki-border-light);
+}
+.deploy-step:last-child { border-bottom: none; }
+.deploy-step.is-active {
+  color: var(--wiki-text);
+  font-weight: 700;
+}
+.deploy-step.is-active .deploy-step-dot {
+  background: var(--wiki-link);
+  color: var(--wiki-bg);
+  border-color: var(--wiki-link);
+}
+.deploy-step.is-done {
+  color: var(--wiki-text);
+}
+.deploy-step.is-done .deploy-step-dot {
+  background: #166534;
+  color: #ffffff;
+  border-color: #166534;
+}
+.deploy-step.is-done .deploy-step-dot::before {
+  content: "✓";
+}
+.deploy-step.is-done .deploy-step-dot { font-size: 0; }
+.deploy-step.is-done .deploy-step-dot::before { font-size: 13px; }
+.deploy-step-dot {
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid var(--wiki-border);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+  background: var(--wiki-bg);
+}
+
+.deploy-result {
+  border: 1px solid var(--wiki-border);
+  background: var(--wiki-bg-alt);
+  padding: 16px 18px;
+}
+.deploy-result-title {
+  font-family: var(--font-serif);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--wiki-text);
+  margin-bottom: 10px;
+}
+
+.deploy-error {
+  border: 1px solid var(--wiki-link-red);
+  background: #fff5f5;
+  padding: 12px 14px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--wiki-link-red);
+}
+
 /* Print — when user prints the page as a PDF, it should still look like Wikipedia */
 @media print {
   .wiki-topbar, .wiki-tabs, .wiki-sidebar, .edit-link, .wiki-footer { display: none; }

@@ -3,10 +3,32 @@
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useState } from "react";
+import { useSession, signIn, signOut } from "next-auth/react";
 import { setupSchema, deriveSlug } from "../lib/schema";
 import { generateZip, triggerDownload } from "../lib/generator";
 import UploadPanel from "./UploadPanel";
 import PreviewModal from "./PreviewModal";
+
+// Convert a File blob to base64 (no data: URL prefix).
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = String(reader.result || "");
+      const comma = result.indexOf(",");
+      resolve(comma >= 0 ? result.slice(comma + 1) : result);
+    };
+    reader.onerror = () => reject(new Error("Failed to read photo file"));
+    reader.readAsDataURL(file);
+  });
+}
+
+const PHOTO_EXT_BY_TYPE = {
+  "image/jpeg": "jpg",
+  "image/jpg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+};
 
 export default function SetupForm() {
   const [generating, setGenerating] = useState(false);
@@ -17,6 +39,11 @@ export default function SetupForm() {
   const [photoError, setPhotoError] = useState("");
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewData, setPreviewData] = useState(null);
+  // Phase 1C — GitHub deploy state
+  const { data: session, status: sessionStatus } = useSession();
+  const [deployStep, setDeployStep] = useState("idle"); // idle | forking | committing | done | error
+  const [deployResult, setDeployResult] = useState(null);
+  const [deployError, setDeployError] = useState("");
 
   const {
     register,
@@ -116,6 +143,48 @@ export default function SetupForm() {
     if (!trimmed) return "";
     if (/^https?:\/\//i.test(trimmed)) return trimmed;
     return "https://" + trimmed.replace(/^\/+/, "");
+  };
+
+  const handleDeploy = async () => {
+    setDeployError("");
+    setDeployResult(null);
+    setDeployStep("forking");
+    try {
+      const raw = watch();
+      // Same normalization the zip path uses, so the Vercel deploy
+      // gets clean URLs.
+      const formData = {
+        ...raw,
+        linkedin: normalizeUrl(raw.linkedin),
+        githubProfile: normalizeUrl(raw.githubProfile),
+        metaBaseUrl: normalizeUrl(raw.metaBaseUrl) || "",
+      };
+      if (!formData.name || !formData.homepageSlug) {
+        throw new Error(
+          "Please fill in your name (we use it for the slug)."
+        );
+      }
+      const photoBase64 = photoFile ? await fileToBase64(photoFile) : null;
+      const photoExt = photoFile
+        ? PHOTO_EXT_BY_TYPE[photoFile.type] || "jpg"
+        : null;
+
+      setDeployStep("committing");
+      const res = await fetch("/api/deploy", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ formData, photoBase64, photoExt }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        throw new Error(json.error || `Deploy failed (${res.status})`);
+      }
+      setDeployResult(json);
+      setDeployStep("done");
+    } catch (e) {
+      setDeployError(e.message || "Deploy failed.");
+      setDeployStep("error");
+    }
   };
 
   const onSubmit = async (rawData) => {
@@ -534,6 +603,145 @@ git push -u origin main`}
             <div className="deploy-card-aside">
               Full step-by-step (with troubleshooting) is also in{" "}
               <code>README.md</code> inside the zip.
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Phase 1C — GitHub one-click deploy */}
+      <div className="setup-section deploy-block">
+        <h2 className="setup-section-heading">
+          Or deploy with one click
+        </h2>
+        <p className="setup-help" style={{ marginTop: -8, marginBottom: 14 }}>
+          Sign in with GitHub and Yourpedia will fork the template,
+          commit your wiki content, and hand you a Vercel deploy
+          button. No terminal, no git commands.
+        </p>
+
+        {sessionStatus === "loading" && (
+          <div className="setup-help">Checking your GitHub session…</div>
+        )}
+
+        {sessionStatus === "unauthenticated" && (
+          <button
+            type="button"
+            onClick={() => signIn("github")}
+            className="deploy-github-button"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width="18"
+              height="18"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <path d="M12 .5C5.65.5.5 5.65.5 12.05c0 5.1 3.3 9.42 7.88 10.95.58.1.79-.25.79-.55v-2.07c-3.2.7-3.88-1.37-3.88-1.37-.52-1.32-1.27-1.67-1.27-1.67-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.02 1.75 2.69 1.24 3.34.95.1-.74.4-1.24.72-1.53-2.55-.29-5.23-1.27-5.23-5.66 0-1.25.45-2.27 1.18-3.07-.12-.29-.51-1.46.11-3.05 0 0 .96-.31 3.15 1.17.92-.25 1.9-.38 2.88-.38s1.96.13 2.88.38c2.19-1.48 3.15-1.17 3.15-1.17.62 1.59.23 2.76.11 3.05.74.8 1.18 1.82 1.18 3.07 0 4.4-2.69 5.36-5.25 5.65.41.36.78 1.06.78 2.13v3.16c0 .31.2.66.79.55C20.2 21.46 23.5 17.15 23.5 12.05 23.5 5.65 18.35.5 12 .5z" />
+            </svg>
+            <span>Sign in with GitHub</span>
+          </button>
+        )}
+
+        {sessionStatus === "authenticated" && deployStep === "idle" && (
+          <div>
+            <div className="deploy-signed-in">
+              <span>
+                Signed in as{" "}
+                <strong>@{session.user?.githubLogin || session.user?.name}</strong>
+              </span>
+              <button
+                type="button"
+                onClick={() => signOut({ redirect: false })}
+                className="deploy-signout-link"
+              >
+                sign out
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={handleDeploy}
+              className="deploy-action-button"
+            >
+              Deploy my wiki to GitHub + open Vercel
+            </button>
+          </div>
+        )}
+
+        {(deployStep === "forking" || deployStep === "committing") && (
+          <div className="deploy-progress">
+            <div
+              className={`deploy-step ${deployStep === "forking" ? "is-active" : "is-done"}`}
+            >
+              <span className="deploy-step-dot">1</span>
+              <span>Forking colarpedia-template into your GitHub…</span>
+            </div>
+            <div
+              className={`deploy-step ${deployStep === "committing" ? "is-active" : "is-pending"}`}
+            >
+              <span className="deploy-step-dot">2</span>
+              <span>Committing your wiki content…</span>
+            </div>
+            <div className="deploy-step is-pending">
+              <span className="deploy-step-dot">3</span>
+              <span>Opening Vercel deploy link…</span>
+            </div>
+          </div>
+        )}
+
+        {deployStep === "done" && deployResult && (
+          <div className="deploy-result">
+            <div className="deploy-result-title">
+              ✓ Your wiki is on GitHub. One click to put it online.
+            </div>
+            <p className="setup-help" style={{ marginBottom: 10 }}>
+              Repo:{" "}
+              <a
+                href={deployResult.forkUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="deploy-card-link"
+              >
+                {deployResult.forkUrl.replace("https://github.com/", "")}
+              </a>{" "}
+              · {deployResult.operations?.length || 0} files committed
+              {deployResult.forkExisted && (
+                <em>
+                  {" "}
+                  (reusing existing fork — old commits preserved)
+                </em>
+              )}
+            </p>
+            <a
+              href={deployResult.vercelDeployUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="deploy-vercel-button"
+            >
+              Deploy on Vercel →
+            </a>
+            <div className="setup-help" style={{ marginTop: 10 }}>
+              Click the button — Vercel will detect Next.js, ask you
+              once for permission, and deploy in ~30s. After deploy,
+              update <code>site.config.js</code> in your fork to set
+              the real <code>baseUrl</code> and you&apos;re done.
+            </div>
+          </div>
+        )}
+
+        {deployStep === "error" && (
+          <div className="deploy-error">
+            <strong>Deploy failed:</strong> {deployError}
+            <div style={{ marginTop: 8 }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setDeployStep("idle");
+                  setDeployError("");
+                }}
+                className="setup-button"
+              >
+                Try again
+              </button>
             </div>
           </div>
         )}
