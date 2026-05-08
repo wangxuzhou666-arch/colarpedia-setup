@@ -25,6 +25,7 @@ export default function UploadPanel({
   setValue,
   setSlugTouched,
   replaceShipped,
+  onPdfFileChange,
 }) {
   const [file, setFile] = useState(null);
   const [pasted, setPasted] = useState("");
@@ -39,15 +40,23 @@ export default function UploadPanel({
     if (f.type && f.type !== "application/pdf" && !f.name.endsWith(".pdf")) {
       setError("Only PDF files are accepted (got " + (f.type || "unknown") + ").");
       setFile(null);
+      onPdfFileChange?.(null);
       return;
     }
     if (f.size > MAX_PDF_BYTES) {
       setError("PDF is too large (max 5 MB).");
       setFile(null);
+      onPdfFileChange?.(null);
       return;
     }
     setError("");
     setFile(f);
+    onPdfFileChange?.(f);
+    // Auto-clear pasted text whenever a new PDF is picked — prevents
+    // accidental double-source contamination (the LLM was mixing PDF
+    // résumé content with leftover paste text in earlier tests).
+    setPasted("");
+    setInfo("");
   };
 
   const fileToBase64 = (f) =>
@@ -189,13 +198,20 @@ export default function UploadPanel({
       <div className="upload-or">— or —</div>
 
       <div className="setup-field">
-        <label className="setup-label">Paste text instead (or in addition)</label>
+        <label className="setup-label">
+          Paste text instead {file ? "(disabled — PDF is selected)" : "(or in addition)"}
+        </label>
         <textarea
           value={pasted}
           onChange={(e) => setPasted(e.target.value)}
           rows={5}
+          disabled={!!file}
           className="setup-textarea"
-          placeholder="Paste your LinkedIn About section, a bio draft, freeform notes — anything Claude can read to learn who you are."
+          placeholder={
+            file
+              ? "PDF is the active source. Remove it (replace with another or refresh) to paste text instead."
+              : "Paste your LinkedIn About section, a bio draft, freeform notes — anything Claude can read to learn who you are."
+          }
         />
       </div>
 

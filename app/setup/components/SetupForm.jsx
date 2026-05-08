@@ -10,6 +10,10 @@ import UploadPanel from "./UploadPanel";
 export default function SetupForm() {
   const [generating, setGenerating] = useState(false);
   const [done, setDone] = useState(false);
+  const [pdfFile, setPdfFile] = useState(null);
+  const [photoFile, setPhotoFile] = useState(null);
+  const [photoPreviewUrl, setPhotoPreviewUrl] = useState("");
+  const [photoError, setPhotoError] = useState("");
 
   const {
     register,
@@ -73,11 +77,31 @@ export default function SetupForm() {
     setValue("githubProfile", "https://github.com/janedoe");
   };
 
+  const onPhotoChange = (f) => {
+    setPhotoError("");
+    if (!f) {
+      setPhotoFile(null);
+      setPhotoPreviewUrl("");
+      return;
+    }
+    if (!f.type?.startsWith("image/")) {
+      setPhotoError("Photo must be an image (JPG / PNG / WebP).");
+      return;
+    }
+    if (f.size > 3 * 1024 * 1024) {
+      setPhotoError("Photo too large (max 3 MB).");
+      return;
+    }
+    setPhotoFile(f);
+    if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl);
+    setPhotoPreviewUrl(URL.createObjectURL(f));
+  };
+
   const onSubmit = async (data) => {
     setGenerating(true);
     setDone(false);
     try {
-      const blob = await generateZip(data);
+      const blob = await generateZip(data, { pdfFile, photoFile });
       const zipName = (data.siteName || "yourpedia").toLowerCase().replace(/[^a-z0-9]/g, "");
       triggerDownload(blob, `${zipName}-${data.homepageSlug}.zip`);
       setDone(true);
@@ -94,6 +118,7 @@ export default function SetupForm() {
         setValue={setValue}
         setSlugTouched={setSlugTouched}
         replaceShipped={replace}
+        onPdfFileChange={setPdfFile}
       />
 
       <div className="setup-example-bar">
@@ -158,6 +183,43 @@ export default function SetupForm() {
             className="setup-textarea"
             placeholder="Write your story Wikipedia-style. Third person. A few paragraphs."
           />
+        </div>
+
+        <div className="setup-field">
+          <label className="setup-label">Portrait photo (optional)</label>
+          <div className="photo-row">
+            {photoPreviewUrl && (
+              <img
+                src={photoPreviewUrl}
+                alt="Portrait preview"
+                className="photo-preview"
+              />
+            )}
+            <div className="photo-controls">
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={(e) => onPhotoChange(e.target.files?.[0])}
+                className="photo-input"
+              />
+              {photoFile && (
+                <button
+                  type="button"
+                  onClick={() => onPhotoChange(null)}
+                  className="setup-button"
+                  style={{ marginLeft: 8 }}
+                >
+                  Remove
+                </button>
+              )}
+            </div>
+          </div>
+          <div className="setup-help">
+            Square crop recommended (600×600+). Will be saved as
+            <code> public/portrait.&lt;ext&gt; </code> in your zip and
+            wired into the bio infobox automatically. JPG / PNG / WebP, max 3 MB.
+          </div>
+          {photoError && <div className="setup-error">{photoError}</div>}
         </div>
       </div>
 

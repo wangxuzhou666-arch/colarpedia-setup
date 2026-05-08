@@ -711,6 +711,34 @@ ol.references li { margin-bottom: 4px; }
   background: #f0fdf4;
 }
 
+/* ===== Portrait photo upload ===== */
+
+.photo-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+.photo-preview {
+  width: 80px;
+  height: 100px;
+  object-fit: cover;
+  object-position: center 26%;
+  border: 1px solid var(--wiki-border);
+  flex-shrink: 0;
+}
+.photo-controls {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.photo-input {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  color: var(--wiki-text-soft);
+}
+
 /* Print — when user prints the page as a PDF, it should still look like Wikipedia */
 @media print {
   .wiki-topbar, .wiki-tabs, .wiki-sidebar, .edit-link, .wiki-footer { display: none; }
