@@ -1,0 +1,10 @@
+node_modules/
+.next/
+out/
+.vercel/
+dev.log
+.env
+.env.local
+.DS_Store
+.claude/
+_drafts/
