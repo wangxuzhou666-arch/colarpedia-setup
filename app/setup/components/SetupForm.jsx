@@ -9,6 +9,41 @@ import { generateZip, triggerDownload } from "../lib/generator";
 import UploadPanel from "./UploadPanel";
 import PreviewModal from "./PreviewModal";
 
+// Project-thumbnail slug. Falls back to project_<idx> if the project
+// hasn't been named yet — keeps the file path stable so the user can
+// upload a thumbnail before typing the name.
+function projectSlug(name, idx) {
+  const fromName = deriveSlug(name);
+  return fromName || `project_${idx + 1}`;
+}
+
+// Decorate shipped[] with a thumbnailPath the wikiPageTemplate can
+// embed. mode="live" → /projects/<slug>.<ext> (zip + GitHub fork);
+// mode="preview" → blob: URL for images, fake relative path for PDFs
+// (PDFs have no cheap browser preview — the link visually confirms
+// "a PDF link will appear here on the live site"; clicking 404s, fine
+// for preview).
+function enrichShipped(data, thumbsByIdx, mode) {
+  return {
+    ...data,
+    shipped: (data.shipped || []).map((s, idx) => {
+      const t = thumbsByIdx[idx];
+      if (!t) return s;
+      const slug = projectSlug(s.name, idx);
+      let path;
+      if (mode === "preview") {
+        path =
+          t.kind === "image"
+            ? t.previewUrl
+            : `${slug}.pdf`;
+      } else {
+        path = `/projects/${slug}.${t.ext}`;
+      }
+      return { ...s, thumbnailPath: path };
+    }),
+  };
+}
+
 // Convert a File blob to base64 (no data: URL prefix).
 function fileToBase64(file) {
   return new Promise((resolve, reject) => {
@@ -30,6 +65,26 @@ const PHOTO_EXT_BY_TYPE = {
   "image/webp": "webp",
 };
 
+// Per-project attachment can be an image OR a PDF. PDFs are linked
+// from the bio's Notable works line; images become inline thumbnails.
+const PROJECT_ATTACHMENT_EXT_BY_TYPE = {
+  "image/jpeg": "jpg",
+  "image/jpg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+  "application/pdf": "pdf",
+};
+
+function projectAttachmentExt(file) {
+  if (!file) return null;
+  const byType = PROJECT_ATTACHMENT_EXT_BY_TYPE[file.type];
+  if (byType) return byType;
+  const dot = file.name.lastIndexOf(".");
+  if (dot < 0) return null;
+  const tail = file.name.slice(dot + 1).toLowerCase();
+  return /^(jpg|jpeg|png|webp|pdf)$/.test(tail) ? tail.replace("jpeg", "jpg") : null;
+}
+
 export default function SetupForm() {
   const [generating, setGenerating] = useState(false);
   const [done, setDone] = useState(false);
@@ -39,6 +94,11 @@ export default function SetupForm() {
   const [photoError, setPhotoError] = useState("");
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewData, setPreviewData] = useState(null);
+  // Project thumbnails — keyed by shipped[] idx. Stored outside the
+  // form because File objects don't survive zod / RHF, and useFieldArray
+  // doesn't know about per-row file uploads.
+  const [projectThumbs, setProjectThumbs] = useState({});
+  const [projectThumbErrors, setProjectThumbErrors] = useState({});
   // Phase 1C — GitHub deploy state
   const { data: session, status: sessionStatus } = useSession();
   const [deployStep, setDeployStep] = useState("idle"); // idle | forking | committing | done | error
@@ -76,6 +136,8 @@ export default function SetupForm() {
       linkedin: "",
       githubProfile: "",
       shipped: [],
+      educations: [],
+      experiences: [],
     },
   });
 
@@ -83,6 +145,18 @@ export default function SetupForm() {
     control,
     name: "shipped",
   });
+  const {
+    fields: eduFields,
+    append: appendEdu,
+    remove: removeEdu,
+    replace: replaceEdu,
+  } = useFieldArray({ control, name: "educations" });
+  const {
+    fields: expFields,
+    append: appendExp,
+    remove: removeExp,
+    replace: replaceExp,
+  } = useFieldArray({ control, name: "experiences" });
 
   const nameValue = watch("name");
   const [slugTouched, setSlugTouched] = useState(false);
@@ -114,6 +188,112 @@ export default function SetupForm() {
     setValue("linkedin", "https://www.linkedin.com/in/janedoe/");
     setValue("githubProfile", "https://github.com/janedoe");
   };
+
+  const setThumbError = (idx, msg) => {
+    setProjectThumbErrors((prev) => {
+      const next = { ...prev };
+      if (msg) next[idx] = msg;
+      else delete next[idx];
+      return next;
+    });
+  };
+
+  const onProjectThumbChange = (idx, f) => {
+    setThumbError(idx, "");
+    if (!f) {
+      setProjectThumbs((prev) => {
+        const cur = prev[idx];
+        if (cur?.previewUrl) URL.revokeObjectURL(cur.previewUrl);
+        const next = { ...prev };
+        delete next[idx];
+        return next;
+      });
+      return;
+    }
+    const ext = projectAttachmentExt(f);
+    if (!ext) {
+      setThumbError(idx, "Use an image (JPG / PNG / WebP) or a PDF.");
+      return;
+    }
+    const kind = ext === "pdf" ? "pdf" : "image";
+    const sizeLimit = kind === "pdf" ? 10 * 1024 * 1024 : 3 * 1024 * 1024;
+    if (f.size > sizeLimit) {
+      setThumbError(
+        idx,
+        kind === "pdf" ? "PDF too large (max 10 MB)." : "Image too large (max 3 MB)."
+      );
+      return;
+    }
+    // Only images get a blob preview URL — PDFs render as a labeled
+    // card in the form (no browser-cheap PDF thumbnail rendering).
+    const previewUrl = kind === "image" ? URL.createObjectURL(f) : null;
+    setProjectThumbs((prev) => {
+      const cur = prev[idx];
+      if (cur?.previewUrl) URL.revokeObjectURL(cur.previewUrl);
+      return {
+        ...prev,
+        [idx]: { file: f, ext, kind, previewUrl, fileName: f.name },
+      };
+    });
+  };
+
+  // useFieldArray's `remove(idx)` shifts subsequent rows down by one.
+  // Mirror that shift in the thumbs map so each thumb stays paired with
+  // its row.
+  const removeProjectRow = (idx) => {
+    remove(idx);
+    setProjectThumbs((prev) => {
+      const next = {};
+      Object.entries(prev).forEach(([k, v]) => {
+        const i = Number(k);
+        if (i < idx) next[i] = v;
+        else if (i === idx) {
+          if (v.previewUrl) URL.revokeObjectURL(v.previewUrl);
+        } else next[i - 1] = v;
+      });
+      return next;
+    });
+    setProjectThumbErrors((prev) => {
+      const next = {};
+      Object.entries(prev).forEach(([k, v]) => {
+        const i = Number(k);
+        if (i < idx) next[i] = v;
+        else if (i > idx) next[i - 1] = v;
+      });
+      return next;
+    });
+  };
+
+  // The LLM upload path calls replace() to wholesale-reset shipped[].
+  // The previous thumbs were attached to projects that no longer exist,
+  // so nuke them — the user re-uploads against the new rows.
+  const replaceShippedAndClearThumbs = (newShipped) => {
+    setProjectThumbs((prev) => {
+      Object.values(prev).forEach((t) => {
+        if (t?.previewUrl) URL.revokeObjectURL(t.previewUrl);
+      });
+      return {};
+    });
+    setProjectThumbErrors({});
+    replace(newShipped);
+  };
+
+  // Auto-derive slug from name on add (user can override).
+  const deriveOrKeep = (entity) => ({
+    ...entity,
+    slug: entity.slug || deriveSlug(entity.name || ""),
+  });
+
+  // Revoke any blob URLs still alive when the form unmounts (zip/deploy
+  // paths don't release them on success — preview re-uses them).
+  useEffect(() => {
+    return () => {
+      Object.values(projectThumbs).forEach((t) => {
+        if (t?.previewUrl) URL.revokeObjectURL(t.previewUrl);
+      });
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const onPhotoChange = (f) => {
     setPhotoError("");
@@ -169,11 +349,33 @@ export default function SetupForm() {
         ? PHOTO_EXT_BY_TYPE[photoFile.type] || "jpg"
         : null;
 
+      // Build the projectThumbs payload the server expects:
+      // [{ idx, slug, ext, base64 }]. Skip rows whose project name is
+      // empty (slug would collide with project_<n> fallback, which is
+      // ugly; better the user names the project first).
+      const thumbPayload = [];
+      for (const [k, t] of Object.entries(projectThumbs)) {
+        const idx = Number(k);
+        const project = (formData.shipped || [])[idx];
+        if (!project?.name) continue;
+        thumbPayload.push({
+          idx,
+          slug: projectSlug(project.name, idx),
+          ext: t.ext,
+          base64: await fileToBase64(t.file),
+        });
+      }
+
       setDeployStep("committing");
       const res = await fetch("/api/deploy", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ formData, photoBase64, photoExt }),
+        body: JSON.stringify({
+          formData,
+          photoBase64,
+          photoExt,
+          projectThumbs: thumbPayload,
+        }),
       });
       const json = await res.json();
       if (!res.ok) {
@@ -191,7 +393,7 @@ export default function SetupForm() {
     setGenerating(true);
     setDone(false);
     try {
-      const data = {
+      const normalized = {
         ...rawData,
         linkedin: normalizeUrl(rawData.linkedin),
         githubProfile: normalizeUrl(rawData.githubProfile),
@@ -199,7 +401,30 @@ export default function SetupForm() {
         githubOwner: rawData.githubOwner || "your-github-username",
         githubRepo: rawData.githubRepo || "your-wiki-repo",
       };
-      const blob = await generateZip(data, { pdfFile, photoFile });
+      // Decorate shipped[] so wikiPageTemplate emits <img> tags pointing
+      // at /projects/<slug>.<ext> in the deployed site.
+      const data = enrichShipped(normalized, projectThumbs, "live");
+
+      // Build the projectThumbs the zip generator expects:
+      // [{ slug, ext, file }]. Filter out rows without a project name.
+      const zipThumbs = Object.entries(projectThumbs)
+        .map(([k, t]) => {
+          const idx = Number(k);
+          const project = (normalized.shipped || [])[idx];
+          if (!project?.name) return null;
+          return {
+            slug: projectSlug(project.name, idx),
+            ext: t.ext,
+            file: t.file,
+          };
+        })
+        .filter(Boolean);
+
+      const blob = await generateZip(data, {
+        pdfFile,
+        photoFile,
+        projectThumbs: zipThumbs,
+      });
       const zipName = (data.siteName || "yourpedia").toLowerCase().replace(/[^a-z0-9]/g, "");
       triggerDownload(blob, `${zipName}-${data.homepageSlug}.zip`);
       setDone(true);
@@ -215,7 +440,9 @@ export default function SetupForm() {
       <UploadPanel
         setValue={setValue}
         setSlugTouched={setSlugTouched}
-        replaceShipped={replace}
+        replaceShipped={replaceShippedAndClearThumbs}
+        replaceEducations={replaceEdu}
+        replaceExperiences={replaceExp}
         onPdfFileChange={setPdfFile}
       />
 
@@ -462,40 +689,321 @@ export default function SetupForm() {
           you want. Each will become its own wiki page later.
         </div>
 
-        {fields.map((field, idx) => (
+        {fields.map((field, idx) => {
+          const thumb = projectThumbs[idx];
+          const thumbErr = projectThumbErrors[idx];
+          return (
+            <div key={field.id} className="setup-array-row">
+              <div>
+                <label className="setup-label">Name</label>
+                <input
+                  {...register(`shipped.${idx}.name`)}
+                  className="setup-input"
+                  placeholder="ProjectOne"
+                />
+              </div>
+              <div>
+                <label className="setup-label">Description</label>
+                <input
+                  {...register(`shipped.${idx}.description`)}
+                  className="setup-input"
+                  placeholder="open-source dev console (2024)"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => removeProjectRow(idx)}
+                className="setup-button"
+              >
+                Remove
+              </button>
+              <div className="project-thumb-row">
+                {thumb?.kind === "image" && thumb.previewUrl && (
+                  <img
+                    src={thumb.previewUrl}
+                    alt=""
+                    className="project-thumb-preview"
+                  />
+                )}
+                {thumb?.kind === "pdf" && (
+                  <div
+                    className="project-thumb-preview project-thumb-pdf"
+                    title={thumb.fileName}
+                  >
+                    <span className="project-thumb-pdf-icon">📄</span>
+                    <span className="project-thumb-pdf-name">
+                      {thumb.fileName.length > 22
+                        ? thumb.fileName.slice(0, 19) + "…"
+                        : thumb.fileName}
+                    </span>
+                  </div>
+                )}
+                <div className="project-thumb-controls">
+                  <label className="setup-label">
+                    Thumbnail or PDF (optional)
+                  </label>
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,application/pdf"
+                    onChange={(e) =>
+                      onProjectThumbChange(idx, e.target.files?.[0])
+                    }
+                    className="photo-input"
+                  />
+                  {thumb && (
+                    <button
+                      type="button"
+                      onClick={() => onProjectThumbChange(idx, null)}
+                      className="setup-button"
+                      style={{ marginLeft: 8 }}
+                    >
+                      Remove
+                    </button>
+                  )}
+                  <div className="setup-help">
+                    <strong>Image</strong> (JPG / PNG / WebP, max 3 MB) →
+                    rendered as a thumbnail next to this project.{" "}
+                    <strong>PDF</strong> (max 10 MB) → linked at the end
+                    of the line. Saved as{" "}
+                    <code>public/projects/&lt;slug&gt;.&lt;ext&gt;</code>.
+                  </div>
+                  {thumbErr && (
+                    <div className="setup-error">{thumbErr}</div>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+
+        <button
+          type="button"
+          onClick={() =>
+            append(
+              deriveOrKeep({
+                name: "",
+                slug: "",
+                description: "",
+                description_zh: "",
+              })
+            )
+          }
+          className="setup-button-add"
+        >
+          + Add a shipped project
+        </button>
+      </div>
+
+      {/* Education */}
+      <div className="setup-section">
+        <h2 className="setup-section-heading">Education (optional)</h2>
+        <div className="setup-help" style={{ marginTop: -8, marginBottom: 12 }}>
+          Each entry becomes its own wiki page. Slug auto-derives from
+          name. Body fields (English / Chinese) get auto-filled by the
+          LLM from your PDF — leave empty if filling manually and a stub
+          page will be generated.
+        </div>
+        {eduFields.map((field, idx) => (
           <div key={field.id} className="setup-array-row">
             <div>
-              <label className="setup-label">Name</label>
+              <label className="setup-label">Institution</label>
               <input
-                {...register(`shipped.${idx}.name`)}
+                {...register(`educations.${idx}.name`)}
                 className="setup-input"
-                placeholder="ProjectOne"
+                placeholder="University of Pennsylvania"
+                onBlur={(e) => {
+                  // Auto-fill slug from name if user hasn't set one yet
+                  const cur = watch(`educations.${idx}.slug`);
+                  if (!cur && e.target.value) {
+                    setValue(
+                      `educations.${idx}.slug`,
+                      deriveSlug(e.target.value),
+                      { shouldValidate: false }
+                    );
+                  }
+                }}
               />
             </div>
             <div>
-              <label className="setup-label">Description</label>
+              <label className="setup-label">Degree</label>
               <input
-                {...register(`shipped.${idx}.description`)}
+                {...register(`educations.${idx}.degree`)}
                 className="setup-input"
-                placeholder="open-source dev console (2024)"
+                placeholder="MSE in Systems Engineering"
               />
             </div>
             <button
               type="button"
-              onClick={() => remove(idx)}
+              onClick={() => removeEdu(idx)}
               className="setup-button"
             >
               Remove
             </button>
+            <details
+              className="setup-array-details"
+              style={{ gridColumn: "1 / -1", marginTop: 6 }}
+            >
+              <summary>More fields (slug · dates · location · zh)</summary>
+              <div className="setup-field-row" style={{ marginTop: 10 }}>
+                <div>
+                  <label className="setup-label">Slug</label>
+                  <input
+                    {...register(`educations.${idx}.slug`)}
+                    className="setup-input"
+                    placeholder="University_of_Pennsylvania"
+                  />
+                </div>
+                <div>
+                  <label className="setup-label">Dates</label>
+                  <input
+                    {...register(`educations.${idx}.date_range`)}
+                    className="setup-input"
+                    placeholder="Aug 2025 – Aug 2027 (expected)"
+                  />
+                </div>
+              </div>
+              <div className="setup-field-row">
+                <div>
+                  <label className="setup-label">Location</label>
+                  <input
+                    {...register(`educations.${idx}.location`)}
+                    className="setup-input"
+                    placeholder="Philadelphia, Pennsylvania, U.S."
+                  />
+                </div>
+                <div>
+                  <label className="setup-label">Name (zh)</label>
+                  <input
+                    {...register(`educations.${idx}.name_zh`)}
+                    className="setup-input"
+                    placeholder="宾夕法尼亚大学"
+                  />
+                </div>
+              </div>
+            </details>
           </div>
         ))}
-
         <button
           type="button"
-          onClick={() => append({ name: "", description: "" })}
+          onClick={() =>
+            appendEdu(
+              deriveOrKeep({
+                name: "",
+                slug: "",
+                degree: "",
+                date_range: "",
+                location: "",
+              })
+            )
+          }
           className="setup-button-add"
         >
-          + Add a shipped project
+          + Add an education entry
+        </button>
+      </div>
+
+      {/* Experience */}
+      <div className="setup-section">
+        <h2 className="setup-section-heading">Experience (optional)</h2>
+        <div className="setup-help" style={{ marginTop: -8, marginBottom: 12 }}>
+          Each entry becomes its own wiki page (employer profile + your
+          role). LLM auto-fills body content from your PDF.
+        </div>
+        {expFields.map((field, idx) => (
+          <div key={field.id} className="setup-array-row">
+            <div>
+              <label className="setup-label">Employer</label>
+              <input
+                {...register(`experiences.${idx}.name`)}
+                className="setup-input"
+                placeholder="China Galaxy Securities"
+                onBlur={(e) => {
+                  const cur = watch(`experiences.${idx}.slug`);
+                  if (!cur && e.target.value) {
+                    setValue(
+                      `experiences.${idx}.slug`,
+                      deriveSlug(e.target.value),
+                      { shouldValidate: false }
+                    );
+                  }
+                }}
+              />
+            </div>
+            <div>
+              <label className="setup-label">Role</label>
+              <input
+                {...register(`experiences.${idx}.role`)}
+                className="setup-input"
+                placeholder="Quantitative Research Intern"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => removeExp(idx)}
+              className="setup-button"
+            >
+              Remove
+            </button>
+            <details
+              className="setup-array-details"
+              style={{ gridColumn: "1 / -1", marginTop: 6 }}
+            >
+              <summary>More fields (slug · dates · location · zh)</summary>
+              <div className="setup-field-row" style={{ marginTop: 10 }}>
+                <div>
+                  <label className="setup-label">Slug</label>
+                  <input
+                    {...register(`experiences.${idx}.slug`)}
+                    className="setup-input"
+                    placeholder="China_Galaxy_Securities"
+                  />
+                </div>
+                <div>
+                  <label className="setup-label">Dates</label>
+                  <input
+                    {...register(`experiences.${idx}.date_range`)}
+                    className="setup-input"
+                    placeholder="Summer 2024"
+                  />
+                </div>
+              </div>
+              <div className="setup-field-row">
+                <div>
+                  <label className="setup-label">Location</label>
+                  <input
+                    {...register(`experiences.${idx}.location`)}
+                    className="setup-input"
+                    placeholder="Shanghai, China"
+                  />
+                </div>
+                <div>
+                  <label className="setup-label">Name (zh)</label>
+                  <input
+                    {...register(`experiences.${idx}.name_zh`)}
+                    className="setup-input"
+                    placeholder="中国银河证券"
+                  />
+                </div>
+              </div>
+            </details>
+          </div>
+        ))}
+        <button
+          type="button"
+          onClick={() =>
+            appendExp(
+              deriveOrKeep({
+                name: "",
+                slug: "",
+                role: "",
+                date_range: "",
+                location: "",
+              })
+            )
+          }
+          className="setup-button-add"
+        >
+          + Add a work experience
         </button>
       </div>
 
@@ -506,11 +1014,16 @@ export default function SetupForm() {
             type="button"
             onClick={() => {
               const current = watch();
-              setPreviewData({
+              const normalized = {
                 ...current,
                 linkedin: normalizeUrl(current.linkedin),
                 githubProfile: normalizeUrl(current.githubProfile),
-              });
+              };
+              // Use blob: URLs in preview so the user sees their just-
+              // uploaded thumbnails without a round-trip.
+              setPreviewData(
+                enrichShipped(normalized, projectThumbs, "preview")
+              );
               setPreviewOpen(true);
             }}
             className="setup-button setup-button-secondary"
@@ -751,6 +1264,33 @@ git push -u origin main`}
         <PreviewModal
           data={previewData}
           photoPreviewUrl={photoPreviewUrl}
+          files={{ photoFile, pdfFile }}
+          onApplyPolish={(section, idx, patch) => {
+            // Apply each verified field to the form. shouldDirty so RHF
+            // tracks user-editable state correctly; preview re-renders
+            // automatically via watch().
+            for (const [field, value] of Object.entries(patch)) {
+              setValue(`${section}.${idx}.${field}`, value, {
+                shouldDirty: true,
+                shouldValidate: false,
+              });
+            }
+            // Re-snapshot previewData so the modal's audit re-runs with
+            // the patched form. previewData is what the modal renders;
+            // refreshing it from current form state syncs both.
+            const fresh = watch();
+            setPreviewData(
+              enrichShipped(
+                {
+                  ...fresh,
+                  linkedin: normalizeUrl(fresh.linkedin),
+                  githubProfile: normalizeUrl(fresh.githubProfile),
+                },
+                projectThumbs,
+                "preview"
+              )
+            );
+          }}
           onClose={() => setPreviewOpen(false)}
         />
       )}

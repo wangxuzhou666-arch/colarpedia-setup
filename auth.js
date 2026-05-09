@@ -6,6 +6,22 @@
 import NextAuth from "next-auth";
 import GitHub from "next-auth/providers/github";
 
+// Fail-fast on missing secrets at module load time. Without AUTH_SECRET,
+// next-auth would silently derive a token-signing key, meaning JWTs
+// could be forged across deploys. Without the GitHub client id/secret
+// the OAuth flow returns an unhelpful error mid-redirect. Better to
+// crash the process at boot so misconfiguration is obvious.
+for (const key of ["AUTH_SECRET", "GITHUB_CLIENT_ID", "GITHUB_CLIENT_SECRET"]) {
+  if (!process.env[key]) {
+    throw new Error(
+      `[auth] Missing required env var ${key}. ` +
+        (key === "AUTH_SECRET"
+          ? "Generate one with: openssl rand -base64 32"
+          : "Register a GitHub OAuth App at github.com/settings/developers.")
+    );
+  }
+}
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
     GitHub({

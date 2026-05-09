@@ -28,6 +28,8 @@ export default function UploadPanel({
   setValue,
   setSlugTouched,
   replaceShipped,
+  replaceEducations,
+  replaceExperiences,
   onPdfFileChange,
 }) {
   const [file, setFile] = useState(null);
@@ -118,8 +120,47 @@ export default function UploadPanel({
         replaceShipped(
           data.shipped.map((s) => ({
             name: s.name || "",
+            name_zh: s.name_zh || "",
+            slug: s.slug || "",
             description: s.description || "",
             description_zh: s.description_zh || "",
+            role: s.role || "",
+            role_zh: s.role_zh || "",
+            date_range: s.date_range || "",
+            url: s.url || "",
+            tech_stack: Array.isArray(s.tech_stack) ? s.tech_stack : [],
+            body: s.body || "",
+            body_zh: s.body_zh || "",
+          }))
+        );
+      }
+      if (Array.isArray(data.educations) && replaceEducations) {
+        replaceEducations(
+          data.educations.map((e) => ({
+            name: e.name || "",
+            name_zh: e.name_zh || "",
+            slug: e.slug || "",
+            degree: e.degree || "",
+            degree_zh: e.degree_zh || "",
+            date_range: e.date_range || "",
+            location: e.location || "",
+            body: e.body || "",
+            body_zh: e.body_zh || "",
+          }))
+        );
+      }
+      if (Array.isArray(data.experiences) && replaceExperiences) {
+        replaceExperiences(
+          data.experiences.map((e) => ({
+            name: e.name || "",
+            name_zh: e.name_zh || "",
+            slug: e.slug || "",
+            role: e.role || "",
+            role_zh: e.role_zh || "",
+            date_range: e.date_range || "",
+            location: e.location || "",
+            body: e.body || "",
+            body_zh: e.body_zh || "",
           }))
         );
       }

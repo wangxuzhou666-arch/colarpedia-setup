@@ -1,55 +1,92 @@
-// Phase 1A form schema. Intentionally lenient — 5h MVP, not over-validate.
-// Required: name, homepageSlug, metaBaseUrl, githubOwner, githubRepo.
-// Everything else optional.
+// Form schema. Sprint 1: multi-page wiki generation.
+//
+// Required: name, homepageSlug, siteName.
+// Everything else optional — LLM fills, user edits, manual-fill flow
+// works with just the required three.
 
 import { z } from "zod";
 
 const slugRegex = /^[A-Z][A-Za-z0-9_]*$/;
 
-export const setupSchema = z.object({
-  // Identity
+// Helper: optional slug — empty allowed, otherwise must match pattern.
+const optionalSlug = z
+  .string()
+  .regex(slugRegex, "Title_Case_With_Underscores (e.g. KitchenSurvivor)")
+  .optional()
+  .or(z.literal(""));
+
+const optionalString = z.string().optional().or(z.literal(""));
+const optionalStringArray = z.array(z.string()).optional().default([]);
+
+const shippedItem = z.object({
   name: z.string().min(1, "Required"),
+  name_zh: optionalString,
+  slug: optionalSlug,
+  description: optionalString,
+  description_zh: optionalString,
+  role: optionalString,
+  role_zh: optionalString,
+  date_range: optionalString,
+  url: optionalString,
+  tech_stack: optionalStringArray,
+  body: optionalString,
+  body_zh: optionalString,
+});
+
+const educationItem = z.object({
+  name: z.string().min(1, "Required"),
+  name_zh: optionalString,
+  slug: optionalSlug,
+  degree: optionalString,
+  degree_zh: optionalString,
+  date_range: optionalString,
+  location: optionalString,
+  body: optionalString,
+  body_zh: optionalString,
+});
+
+const experienceItem = z.object({
+  name: z.string().min(1, "Required"),
+  name_zh: optionalString,
+  slug: optionalSlug,
+  role: optionalString,
+  role_zh: optionalString,
+  date_range: optionalString,
+  location: optionalString,
+  body: optionalString,
+  body_zh: optionalString,
+});
+
+export const setupSchema = z.object({
+  // Identity (required)
+  name: z.string().min(1, "Required"),
+  name_zh: optionalString,
   homepageSlug: z
     .string()
     .min(1, "Required")
     .regex(slugRegex, "Title_Case_With_Underscores (e.g. Jane_Doe)"),
-  tagline: z.string().optional().or(z.literal("")),
-  bio: z.string().optional().or(z.literal("")),
+  tagline: optionalString,
+  tagline_zh: optionalString,
+  bio: optionalString,
+  bio_zh: optionalString,
 
-  // Site
+  // Site (required)
   siteName: z.string().min(1, "Required").default("Yourpedia"),
 
-  // Meta
-  metaBaseUrl: z
-    .string()
-    .url("Must be a valid URL (e.g. https://your-site.vercel.app)"),
-
-  // GitHub
-  githubOwner: z.string().min(1, "Required"),
-  githubRepo: z.string().min(1, "Required"),
+  // Meta (advanced, all optional — relaxed in Phase 1B v2)
+  metaBaseUrl: optionalString,
+  githubOwner: optionalString,
+  githubRepo: optionalString,
 
   // Contact (all optional)
-  email: z
-    .string()
-    .email("Invalid email")
-    .optional()
-    .or(z.literal("")),
-  linkedin: z.string().url("Must be a full URL").optional().or(z.literal("")),
-  githubProfile: z
-    .string()
-    .url("Must be a full URL")
-    .optional()
-    .or(z.literal("")),
+  email: z.string().email("Invalid email").optional().or(z.literal("")),
+  linkedin: optionalString,
+  githubProfile: optionalString,
 
-  // Shipped (Phase 1A: stored but only listed in bio, not separate pages)
-  shipped: z
-    .array(
-      z.object({
-        name: z.string().min(1, "Required"),
-        description: z.string().optional().or(z.literal("")),
-      })
-    )
-    .default([]),
+  // Multi-entity arrays (Sprint 1)
+  shipped: z.array(shippedItem).default([]),
+  educations: z.array(educationItem).default([]),
+  experiences: z.array(experienceItem).default([]),
 });
 
 export function deriveSlug(name) {

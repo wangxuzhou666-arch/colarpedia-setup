@@ -1,16 +1,20 @@
 // Client-side zip generator. Runs entirely in the user's browser —
 // no API endpoint, no server compute.
+//
+// Sprint 1: emits multi-page wiki — bio + per-project + per-education
+// + per-experience + auto-index, en + zh.
 
 import JSZip from "jszip";
 import {
   siteConfigTemplate,
   wikiPageTemplate,
+  projectPageTemplate,
+  institutionPageTemplate,
+  indexPageTemplate,
   readmeTemplate,
 } from "./templates";
 
-// Lazy fetch + cache the template bundle JSON (build-time snapshot of
-// the colarpedia-template repo). Lets users get a fully-runnable Next.js
-// app in their zip — no GitHub fork, no manual file copying.
+// Lazy fetch + cache the template bundle JSON.
 let _templateBundleCache = null;
 async function loadTemplateBundle() {
   if (_templateBundleCache) return _templateBundleCache;
@@ -32,9 +36,6 @@ function base64ToUint8Array(b64) {
   return arr;
 }
 
-// Files we'll OVERRIDE with user's generated content. These already
-// have a path-clash with the bundle — skip them from the bundle so the
-// generator's own output wins.
 const TEMPLATE_OVERRIDES = new Set([
   "site.config.js",
   "README.md",
@@ -60,13 +61,25 @@ function photoExtension(file) {
   return "jpg";
 }
 
+// Detect whether the payload has any zh content. Drives whether we
+// emit the .zh.md mirrors at all.
+function detectHasZh(data) {
+  if (data.bio_zh || data.tagline_zh || data.name_zh) return true;
+  if ((data.shipped || []).some((s) => s.description_zh || s.body_zh || s.name_zh)) return true;
+  if ((data.educations || []).some((e) => e.body_zh || e.name_zh || e.degree_zh)) return true;
+  if ((data.experiences || []).some((e) => e.body_zh || e.name_zh || e.role_zh)) return true;
+  return false;
+}
+
 /**
  * Build the deliverable zip.
  *
- * @param {object} data            form values (zod-validated)
+ * @param {object} data            zod-validated form data
  * @param {object} [files]         optional file payloads
- * @param {File}   [files.pdfFile] the original résumé PDF (archived under raw/)
- * @param {File}   [files.photoFile] portrait photo for the bio infobox
+ * @param {File}   [files.pdfFile] original résumé PDF (archived in raw/)
+ * @param {File}   [files.photoFile] portrait photo
+ * @param {Array<{slug: string, ext: string, file: File}>} [files.projectThumbs]
+ *        Per-project thumbnails (image or PDF) → public/projects/<slug>.<ext>.
  */
 export async function generateZip(data, files = {}) {
   const zip = new JSZip();
@@ -74,7 +87,7 @@ export async function generateZip(data, files = {}) {
   const photoExt = photoExtension(files.photoFile);
   const photoPath = photoExt ? `public/portrait.${photoExt}` : null;
 
-  // 1. Layer the template bundle in first so user-generated files can override.
+  // 1. Layer the template bundle in first so user-generated files override.
   const bundle = await loadTemplateBundle();
   let bundleStats = { included: 0, skipped: 0 };
   if (bundle && Array.isArray(bundle.files)) {
@@ -83,38 +96,89 @@ export async function generateZip(data, files = {}) {
         bundleStats.skipped += 1;
         continue;
       }
-      const data8 = base64ToUint8Array(f.content);
-      // JSZip handles binary vs text the same way for Uint8Array.
-      zip.file(f.path, data8);
+      zip.file(f.path, base64ToUint8Array(f.content));
       bundleStats.included += 1;
     }
   }
 
-  // 2. User-generated files (these win over any same-path bundle entry).
+  const hasZh = detectHasZh(data);
+  const ctx = {
+    homepageSlug: data.homepageSlug,
+    name: data.name,
+    name_zh: data.name_zh,
+  };
+
+  // 2. site.config (with auto-populated sidebar)
   zip.file("site.config.js", siteConfigTemplate(data));
+
+  // 3. Bio (en + zh if applicable)
   zip.file(
     `wiki/${data.homepageSlug}.md`,
     wikiPageTemplate(data, { photoPath, lang: "en" })
   );
-  // Always emit a Chinese mirror — the wiki renderer will fall back to
-  // the English file if .zh.md is missing, but having it pre-populated
-  // means /zh/wiki/<Slug>/ shows real content from day one.
-  const hasZhContent =
-    !!(data.bio_zh || data.tagline_zh || data.name_zh) ||
-    (data.shipped || []).some((s) => s.description_zh);
-  if (hasZhContent) {
+  if (hasZh) {
     zip.file(
       `wiki/${data.homepageSlug}.zh.md`,
       wikiPageTemplate(data, { photoPath, lang: "zh" })
     );
   }
+
+  // 4. Per-project pages
+  for (const p of data.shipped || []) {
+    if (!p.slug || !p.name) continue;
+    zip.file(`wiki/${p.slug}.md`, projectPageTemplate(p, ctx, { lang: "en" }));
+    if (hasZh) {
+      zip.file(
+        `wiki/${p.slug}.zh.md`,
+        projectPageTemplate(p, ctx, { lang: "zh" })
+      );
+    }
+  }
+
+  // 5. Per-education pages
+  for (const e of data.educations || []) {
+    if (!e.slug || !e.name) continue;
+    zip.file(
+      `wiki/${e.slug}.md`,
+      institutionPageTemplate(e, ctx, "education", { lang: "en" })
+    );
+    if (hasZh) {
+      zip.file(
+        `wiki/${e.slug}.zh.md`,
+        institutionPageTemplate(e, ctx, "education", { lang: "zh" })
+      );
+    }
+  }
+
+  // 6. Per-experience pages
+  for (const ex of data.experiences || []) {
+    if (!ex.slug || !ex.name) continue;
+    zip.file(
+      `wiki/${ex.slug}.md`,
+      institutionPageTemplate(ex, ctx, "experience", { lang: "en" })
+    );
+    if (hasZh) {
+      zip.file(
+        `wiki/${ex.slug}.zh.md`,
+        institutionPageTemplate(ex, ctx, "experience", { lang: "zh" })
+      );
+    }
+  }
+
+  // 7. Auto index.md
+  zip.file("wiki/index.md", indexPageTemplate(data, { lang: "en" }));
+  if (hasZh) {
+    zip.file("wiki/index.zh.md", indexPageTemplate(data, { lang: "zh" }));
+  }
+
+  // 8. README
   zip.file(
     "README.md",
     readmeTemplate(data, {
       hasPhoto: !!photoPath,
       hasOriginalPdf: !!files.pdfFile,
       includesTemplate: bundleStats.included > 0,
-      hasChinese: hasZhContent,
+      hasChinese: hasZh,
     })
   );
 
@@ -122,10 +186,14 @@ export async function generateZip(data, files = {}) {
     zip.file(photoPath, files.photoFile);
   }
 
+  if (Array.isArray(files.projectThumbs)) {
+    for (const t of files.projectThumbs) {
+      if (!t?.file || !t?.slug || !t?.ext) continue;
+      zip.file(`public/projects/${t.slug}.${t.ext}`, t.file);
+    }
+  }
+
   if (files.pdfFile) {
-    // Archive the original résumé so the user keeps a copy alongside
-    // their generated wiki, and can re-feed it into a future Yourpedia
-    // run if the schema changes.
     const safeName = files.pdfFile.name.replace(/[^A-Za-z0-9._-]/g, "_");
     zip.file(`raw/${safeName}`, files.pdfFile);
   }
