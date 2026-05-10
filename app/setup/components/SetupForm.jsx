@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useState } from "react";
 import { useSession, signIn, signOut } from "next-auth/react";
 import { setupSchema, deriveSlug } from "../lib/schema";
+import { getSupabaseBrowserClient } from "../../../lib/supabase/client";
 import UploadPanel from "./UploadPanel";
 import PreviewModal from "./PreviewModal";
 
@@ -102,6 +103,31 @@ export default function SetupForm() {
   const [deployStep, setDeployStep] = useState("idle"); // idle | forking | committing | done | error
   const [deployResult, setDeployResult] = useState(null);
   const [deployError, setDeployError] = useState("");
+  // Supabase hosted publish 路径
+  const [supaUser, setSupaUser] = useState(null);
+  const [supaUserLoading, setSupaUserLoading] = useState(true);
+  const [publishStep, setPublishStep] = useState("idle"); // idle | publishing | done | error
+  const [publishResult, setPublishResult] = useState(null);
+  const [publishError, setPublishError] = useState("");
+
+  // 监听 Supabase session
+  useEffect(() => {
+    let mounted = true;
+    const supabase = getSupabaseBrowserClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!mounted) return;
+      setSupaUser(user || null);
+      setSupaUserLoading(false);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, sess) => {
+      if (!mounted) return;
+      setSupaUser(sess?.user || null);
+    });
+    return () => {
+      mounted = false;
+      subscription?.unsubscribe();
+    };
+  }, []);
 
   const {
     register,
@@ -324,6 +350,50 @@ export default function SetupForm() {
     if (!trimmed) return "";
     if (/^https?:\/\//i.test(trimmed)) return trimmed;
     return "https://" + trimmed.replace(/^\/+/, "");
+  };
+
+  // 一键 hosted 上线：调 /api/publish，写入 Supabase，返回 yourpedia.app/<slug>/
+  const handlePublish = async () => {
+    setPublishError("");
+    setPublishResult(null);
+    setPublishStep("publishing");
+    try {
+      const raw = watch();
+      const formData = {
+        ...raw,
+        linkedin: normalizeUrl(raw.linkedin),
+        githubProfile: normalizeUrl(raw.githubProfile),
+      };
+      if (!formData.name && !formData.name_zh) {
+        throw new Error("先填一下姓名再上线。");
+      }
+      const photoBase64 = photoFile ? await fileToBase64(photoFile) : null;
+      const photoExt = photoFile
+        ? PHOTO_EXT_BY_TYPE[photoFile.type] || "jpg"
+        : null;
+      const res = await fetch("/api/publish", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ formData, photoBase64, photoExt }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        throw new Error(json.error || `上线失败（${res.status}）`);
+      }
+      setPublishResult(json);
+      setPublishStep("done");
+    } catch (e) {
+      setPublishError(e.message || "上线失败，再试一次。");
+      setPublishStep("error");
+    }
+  };
+
+  const handleSupaSignOut = async () => {
+    const supabase = getSupabaseBrowserClient();
+    await supabase.auth.signOut();
+    setSupaUser(null);
+    setPublishStep("idle");
+    setPublishResult(null);
   };
 
   const handleDeploy = async () => {
@@ -1072,12 +1142,160 @@ export default function SetupForm() {
           </button>
         </div>
 
+        {/* —— 主推路径：Yourpedia hosted —— */}
         <p className="setup-help" style={{ marginTop: 16, marginBottom: 14 }}>
+          点下面按钮，我们直接给你一个可分享的链接：
+          <strong>yourpedia.app/你的名字</strong>。30 秒上线，不用 GitHub、不用部署、不用敲命令。
+        </p>
+
+        {supaUserLoading && (
+          <div className="setup-help">正在检查登录状态…</div>
+        )}
+
+        {!supaUserLoading && !supaUser && (
+          <>
+            <a
+              href="/login?next=/setup/"
+              className="deploy-action-button"
+              style={{ display: "inline-block", textDecoration: "none" }}
+            >
+              ✨ 登录后一键上线我的网站
+            </a>
+            <div className="setup-help" style={{ marginTop: 8 }}>
+              用邮箱登录就行（不需要密码）。我们给你发一封登录链接邮件，点链接回来就能上线。
+            </div>
+          </>
+        )}
+
+        {!supaUserLoading && supaUser && publishStep === "idle" && (
+          <div>
+            <div className="deploy-signed-in">
+              <span>
+                已登录：<strong>{supaUser.email}</strong>
+              </span>
+              <button
+                type="button"
+                onClick={handleSupaSignOut}
+                className="deploy-signout-link"
+              >
+                换个邮箱
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={handlePublish}
+              className="deploy-action-button"
+            >
+              ✨ 一键上线我的网站
+            </button>
+          </div>
+        )}
+
+        {publishStep === "publishing" && (
+          <div className="deploy-progress">
+            <div className="deploy-step is-active">
+              <span className="deploy-step-dot">1</span>
+              <span>正在为你创建网站…</span>
+            </div>
+          </div>
+        )}
+
+        {publishStep === "done" && publishResult && (
+          <div className="deploy-result">
+            <div className="deploy-result-title">
+              ✓ 你的网站已经上线了！
+            </div>
+            <p className="setup-help" style={{ marginBottom: 10 }}>
+              链接：{" "}
+              <a
+                href={publishResult.url}
+                target="_blank"
+                rel="noreferrer"
+                className="deploy-card-link"
+                style={{ fontSize: 16, fontWeight: 600 }}
+              >
+                {typeof window !== "undefined" ? window.location.host : ""}
+                {publishResult.url}
+              </a>
+              {publishResult.isFirstPublish ? (
+                <em>（第一次发布，直接打开看看）</em>
+              ) : (
+                <em>（已更新，最迟 60 秒生效）</em>
+              )}
+            </p>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+              <a
+                href={publishResult.url}
+                target="_blank"
+                rel="noreferrer"
+                className="deploy-vercel-button"
+              >
+                🌐 打开我的网站 →
+              </a>
+              <button
+                type="button"
+                onClick={() => {
+                  if (typeof window !== "undefined") {
+                    const fullUrl = window.location.origin + publishResult.url;
+                    navigator.clipboard?.writeText(fullUrl);
+                  }
+                }}
+                className="setup-button"
+              >
+                📋 复制链接
+              </button>
+            </div>
+            <div className="setup-help" style={{ marginTop: 12 }}>
+              这个链接你可以直接放进领英 / 小红书 / 简历里。链接就是你的网站，不用再做别的。
+              <br />
+              想改内容？回到这个页面改完表单，再点一次「一键上线」就行。
+            </div>
+
+            <details className="setup-array-details" style={{ marginTop: 14 }}>
+              <summary>想用自己的域名（如 wangxue.com）？</summary>
+              <div className="setup-help" style={{ marginTop: 10 }}>
+                目前 hosted 版本暂不支持自定义域名（M5 会加）。
+                如果你现在就需要自己域名，可以走下面的「导出到 GitHub」选项，
+                把 wiki 部署到你自己的 Vercel 项目，再绑域名。
+              </div>
+            </details>
+          </div>
+        )}
+
+        {publishStep === "error" && (
+          <div className="deploy-error">
+            <strong>上线失败：</strong>{publishError}
+            <div style={{ marginTop: 8 }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setPublishStep("idle");
+                  setPublishError("");
+                }}
+                className="setup-button"
+              >
+                再试一次
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* —— 进阶路径：导出到自己的 GitHub（折叠默认） —— */}
+      <details className="setup-advanced" style={{ marginTop: 24 }}>
+        <summary>
+          <span className="setup-advanced-title">想自己掌控？导出到你的 GitHub</span>
+          <span className="setup-advanced-hint">
+            适合开发者：fork 模板 + 提交内容到你的 GitHub + Vercel 部署，代码完全归你
+          </span>
+        </summary>
+        <div className="setup-section deploy-block" style={{ marginTop: 14 }}>
+
+        <p className="setup-help" style={{ marginTop: 0, marginBottom: 14 }}>
           点下面按钮，我们会自动帮你：
           <strong>① 在你 GitHub 复制一份模板</strong> →
           <strong>② 把你的 wiki 内容提交进去</strong> →
           <strong>③ 给你一个 Vercel 部署按钮</strong>。
-          全程不用敲命令、不用懂代码。整个过程约 30 秒。
         </p>
 
         {sessionStatus === "loading" && (
@@ -1134,7 +1352,7 @@ export default function SetupForm() {
               onClick={handleDeploy}
               className="deploy-action-button"
             >
-              🚀 一键上线我的 wiki
+              🚀 部署到我的 GitHub + Vercel
             </button>
           </div>
         )}
@@ -1227,7 +1445,8 @@ export default function SetupForm() {
             </div>
           </div>
         )}
-      </div>
+        </div>
+      </details>
 
       {previewOpen && previewData && (
         <PreviewModal
