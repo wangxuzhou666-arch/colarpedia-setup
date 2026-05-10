@@ -16,6 +16,8 @@
     "@anthropic-ai/sdk": "^0.40.0",
     "@hookform/resolvers": "^3.9.1",
     "@octokit/rest": "^22.0.1",
+    "@supabase/ssr": "^0.10.3",
+    "@supabase/supabase-js": "^2.105.4",
     "next": "^15.1.0",
     "next-auth": "^5.0.0-beta.31",
     "pdf-parse": "^1.1.1",
