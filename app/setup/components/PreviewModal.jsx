@@ -121,7 +121,7 @@ export default function PreviewModal({
   onApplyPolish, // (section, idx, patch) => void  — parent setValue
   onClose,
 }) {
-  const [lang, setLang] = useState("en");
+  const [lang, setLang] = useState("zh");
   const [showAudit, setShowAudit] = useState(true);
   const [currentSlug, setCurrentSlug] = useState(data.homepageSlug);
   const [gapFillOpen, setGapFillOpen] = useState(null); // { section, idx, fields }
@@ -235,7 +235,7 @@ export default function PreviewModal({
   let infoboxJsx = null;
 
   if (pageData.kind === "bio") {
-    pageTitle = (isZh && data.name_zh ? data.name_zh : data.name) || "[Your name]";
+    pageTitle = (isZh && data.name_zh ? data.name_zh : data.name) || "[姓名]";
     pageSubtitle = (isZh ? data.tagline_zh : data.tagline) || "";
     const knownForLabel = isZh ? "以…著称" : "Known for";
     const contactLabel = isZh ? "联系方式" : "Contact";
@@ -344,7 +344,7 @@ export default function PreviewModal({
       if (e.date_range) rows.push([isZh ? "时间" : "Dates", e.date_range]);
     }
     infoboxJsx = (
-      <aside className="wiki-infobox" aria-label="Infobox">
+      <aside className="wiki-infobox" aria-label="信息卡">
         <div className="wiki-infobox-title">{e.name}</div>
         <table>
           <tbody>
@@ -433,19 +433,19 @@ export default function PreviewModal({
               type="button"
               className={`preview-audit-toggle ${showAudit ? "is-active" : ""}`}
               onClick={() => setShowAudit((v) => !v)}
-              title={`${totalSuggestions} suggestion${totalSuggestions === 1 ? "" : "s"} to improve completeness`}
+              title={`${totalSuggestions} 条改进建议`}
             >
-              💡 {totalSuggestions} suggestion{totalSuggestions === 1 ? "" : "s"}
+              💡 {totalSuggestions} 条建议
             </button>
           )}
           <span className="preview-meta">
-            Preview — exact rendering after deploy
+            预览 · 上线后会是这个样子
           </span>
           <button
             type="button"
             className="preview-close"
             onClick={onClose}
-            aria-label="Close preview"
+            aria-label="关闭预览"
           >
             ✕
           </button>
@@ -454,26 +454,24 @@ export default function PreviewModal({
         {showAudit && totalSuggestions > 0 && (
           <div className="preview-audit-panel" role="region" aria-label="Completeness suggestions">
             <div className="preview-audit-header">
-              <strong>Want a richer wiki?</strong>
+              <strong>想让 wiki 更丰富？</strong>
               <span className="preview-audit-sub">
-                Local check — no AI / no tokens spent for this audit. Edit the form
-                or click <em>Add material</em> to fill an entity from a fresh PDF.
+                这些建议是本地检查，不消耗 AI 额度。直接改表单，或点
+                <em>补充内容</em>用一份新的 PDF 自动补全某条经历。
               </span>
             </div>
 
             {polishTargets.length > 0 && onApplyPolish && (
               <div className="preview-audit-polish-row">
-                <strong>Add material:</strong>
+                <strong>补充内容：</strong>
                 {polishTargets.map((t) => {
                   const arr = data[t.section] || [];
                   const ent = arr[t.idx];
                   if (!ent) return null;
-                  // flaggedCount > 0 → auditor flagged real gaps → urgent label
-                  // flaggedCount === 0 → backfilled "enrich" entry → soft label
                   const isGap = t.flaggedCount > 0;
                   const labelSuffix = isGap
-                    ? `(${t.flaggedCount} gap${t.flaggedCount === 1 ? "" : "s"})`
-                    : `(enrich)`;
+                    ? `（缺 ${t.flaggedCount} 项）`
+                    : `（润色）`;
                   return (
                     <button
                       key={`${t.section}-${t.idx}`}
@@ -482,8 +480,8 @@ export default function PreviewModal({
                       onClick={() => setGapFillOpen(t)}
                       title={
                         isGap
-                          ? `Fill missing: ${t.fields.join(", ")}`
-                          : `Attach a fresh PDF / paste text to enrich body of ${ent.name}`
+                          ? `补全缺失字段：${t.fields.join("、")}`
+                          : `用新的 PDF / 文字补充 ${ent.name} 的详情`
                       }
                     >
                       📎 {ent.name || `[${t.section}[${t.idx}]]`}{" "}
@@ -512,7 +510,7 @@ export default function PreviewModal({
             )}
             {grouped.info.length > 0 && (
               <details className="preview-audit-info">
-                <summary>{grouped.info.length} smaller polish items</summary>
+                <summary>还有 {grouped.info.length} 条小建议</summary>
                 <ul className="preview-audit-list is-info">
                   {grouped.info.map((s, i) => (
                     <li key={`i-${i}`}>{s.message}</li>
@@ -550,7 +548,7 @@ export default function PreviewModal({
         })()}
 
         <div className="preview-body" onClick={onBodyClick}>
-          <nav className="preview-nav" aria-label="Wiki pages">
+          <nav className="preview-nav" aria-label="页面导航">
             {navSections.map((section) => (
               <div key={section.heading} className="preview-nav-section">
                 <div className="preview-nav-heading">{section.heading}</div>
@@ -575,7 +573,7 @@ export default function PreviewModal({
 
           <div className="preview-content">
             <main className="wiki-main preview-wiki-main">
-              <h1 className="wiki-title">{pageTitle || "[Untitled]"}</h1>
+              <h1 className="wiki-title">{pageTitle || "[暂未命名]"}</h1>
               {pageSubtitle && <p className="wiki-title-sub">{pageSubtitle}</p>}
               {infoboxJsx}
               <ReactMarkdown

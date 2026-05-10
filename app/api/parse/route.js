@@ -40,7 +40,7 @@ function checkRateLimit(ip) {
   if (cur.count >= limit) {
     return {
       ok: false,
-      reason: `Daily limit of ${limit} generations reached for this IP. Try again tomorrow.`,
+      reason: `今天的免费解析次数用完了（每个网络 ${limit} 次/天）。明早重置——也可以先在下面手动填表单跳过 AI 解析这一步。`,
     };
   }
   cur.count += 1;
@@ -52,7 +52,7 @@ async function extractPdfText(base64) {
   const pdfParse = (await import("pdf-parse")).default;
   const buf = Buffer.from(base64, "base64");
   if (buf.length > 5 * 1024 * 1024) {
-    throw new Error("PDF too large (max 5 MB).");
+    throw new Error("PDF 太大（最多 5 MB）。");
   }
   const result = await pdfParse(buf);
   return (result.text || "").trim();
@@ -63,7 +63,7 @@ export async function POST(req) {
     return Response.json(
       {
         error:
-          "Server is missing ANTHROPIC_API_KEY. The tool owner needs to set this env var.",
+          "服务器还没配置 AI 接口密钥（ANTHROPIC_API_KEY）。工具部署者需要设置这个环境变量。",
       },
       { status: 500 }
     );
@@ -79,13 +79,13 @@ export async function POST(req) {
   try {
     body = await req.json();
   } catch {
-    return Response.json({ error: "Invalid JSON body." }, { status: 400 });
+    return Response.json({ error: "请求格式不对（不是合法 JSON）。" }, { status: 400 });
   }
 
   const { pdfBase64, text } = body || {};
   if (!pdfBase64 && !text) {
     return Response.json(
-      { error: "Provide either `pdfBase64` or `text`." },
+      { error: "请上传一份 PDF 或提供文字内容。" },
       { status: 400 }
     );
   }
@@ -102,7 +102,7 @@ export async function POST(req) {
     }
   } catch (e) {
     return Response.json(
-      { error: `PDF parse failed: ${e.message}` },
+      { error: `PDF 读取失败：${e.message}（可能是扫描件或加密 PDF，建议导出为可选中文字的 PDF 再试，或直接粘贴文字）` },
       { status: 400 }
     );
   }
@@ -110,8 +110,7 @@ export async function POST(req) {
   if (sourceText.trim().length < 30) {
     return Response.json(
       {
-        error:
-          "Source text is too short to generate a meaningful bio (need at least ~30 characters of real content).",
+        error: "内容太短了（至少需要 30 字以上的真实内容）才能生成有意义的简介。",
       },
       { status: 400 }
     );
@@ -145,7 +144,7 @@ export async function POST(req) {
   } catch (e) {
     const status = e?.status || 500;
     return Response.json(
-      { error: `LLM call failed: ${e.message || "unknown error"}` },
+      { error: `AI 调用失败：${e.message || "未知错误"}（过几秒再试，或换一份输入）` },
       { status }
     );
   }
@@ -156,8 +155,7 @@ export async function POST(req) {
   if (!toolBlock || !toolBlock.input) {
     return Response.json(
       {
-        error:
-          "Model did not return structured data. Try again or paste a longer source text.",
+        error: "AI 没看明白这份内容（可能是扫描件 / 排版太复杂）。试试粘贴更详细的文字版，或换一份 PDF。",
       },
       { status: 502 }
     );

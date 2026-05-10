@@ -1,78 +1,87 @@
-# Yourpedia — Setup Tool
+# Yourpedia · 把简历变成你的个人 wiki 站
 
-A web tool that turns a résumé (PDF or freeform text) into a deployable
-Wikipedia-styled personal wiki, ready to drop into a fork of
-[colarpedia-template](https://github.com/wangxuzhou666-arch/colarpedia-template).
+[Live](https://colarpedia-setup.vercel.app) · [模板仓库](https://github.com/wangxuzhou666-arch/colarpedia-template)
 
-**Status:** Phase 1B (LLM-powered auto-fill). Local-only — not yet
-deployed.
+一个开源 Web 工具：上传简历 PDF → AI 自动提取信息 → 表单核对修改 →
+一键 fork 模板仓库 + 提交内容 → Vercel 30 秒上线。
+做出来的 wiki 是双语（中文 + English），代码、内容、域名都在你自己的账号下。
 
-## What it does
+灵感来自 Andrej Karpathy 的
+[LLM Wiki](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f) 风格。
 
-1. User uploads a PDF résumé (or pastes any self-description text).
-2. Server calls Claude Haiku 4.5 to extract structured wiki data.
-3. Data auto-fills the form. User edits anything they want.
-4. Browser packages a zip with `site.config.js` + `wiki/<You>.md` +
-   a 5-step deploy README.
-5. User forks [colarpedia-template](https://github.com/wangxuzhou666-arch/colarpedia-template),
-   drops in the zip contents, pushes, deploys to Vercel — done.
+## 用户视角的流程
 
-## Stack
+1. 打开 [colarpedia-setup.vercel.app](https://colarpedia-setup.vercel.app)
+2. 上传简历 PDF（或粘贴一段自我介绍）
+3. AI 把表单填好，你检查并补充
+4. 用 GitHub 账号登录，点「一键上线我的 wiki」
+5. Vercel 一次部署，给你一个可分享的 URL
 
-- **Next.js 15** App Router (mixed SSR + static)
-- **Anthropic Claude Haiku 4.5** — résumé parsing via tool-use structured output
-- **pdf-parse** — server-side PDF text extraction
-- **react-hook-form + zod + @hookform/resolvers** — form + validation
-- **jszip** — in-browser archive packaging
+整个流程约 5 分钟，全程中文，不需要敲命令、不需要懂代码。
 
-## Local dev
+## 技术栈
+
+- **Next.js 15** App Router (混合 SSR + 静态)
+- **Anthropic Claude Haiku 4.5**——简历解析（tool-use 结构化输出）
+- **NextAuth v5 + GitHub OAuth**——一键 fork + commit 到用户仓库
+- **@octokit/rest**——GitHub API 调用
+- **pdf-parse**——服务端 PDF 文本提取
+- **react-hook-form + zod**——表单和校验
+
+## 隐私
+
+- 简历内容会发送到 Anthropic Claude API 做解析（这一步必须走第三方 LLM）
+- Anthropic 的数据保留政策见 [anthropic.com/legal/privacy](https://www.anthropic.com/legal/privacy)
+- 我们这边**不存储**简历内容、不写日志、不 fingerprint
+- GitHub OAuth 申请的是 `public_repo` 权限——这个权限范围比工具实际需要的大
+  （我们只往 `colarpedia-template` 的 fork 里写，但 GitHub 给的 token 理论上能写你任何 public repo）。
+  如果不放心，可以授权后立刻去 [github.com/settings/applications](https://github.com/settings/applications) 撤销。
+
+## 本地开发
 
 ```bash
-# 1. Get an Anthropic API key
+# 1. 申请 Anthropic API key
 #    https://console.anthropic.com/settings/keys
-#    (Free tier: $5 credit, ~1000 generations of Haiku 4.5)
+#    免费额度：$5，约 1000 次 Haiku 4.5 解析
 
-# 2. Configure env
+# 2. 配置环境变量
 cp .env.example .env.local
-# Edit .env.local and paste your sk-ant-... key
+# 编辑 .env.local：
+#   ANTHROPIC_API_KEY=sk-ant-...
+#   AUTH_SECRET=$(openssl rand -base64 32)
+#   GITHUB_CLIENT_ID=...        # https://github.com/settings/developers
+#   GITHUB_CLIENT_SECRET=...
 
-# 3. Install + run
+# 3. 安装 + 运行
 npm install
 npm run dev
 # → http://localhost:3000/setup/
 ```
 
-## Architecture
+## 架构
 
-| Route | Render | Purpose |
+| 路由 | 渲染 | 用途 |
 |---|---|---|
-| `/` | Static | Client-side redirect to `/setup/` |
-| `/setup` | Static + client | Form, upload UI, in-browser zip generation |
-| `/api/parse` | Dynamic SSR | Anthropic SDK call (API key never exposed to browser) |
+| `/` | 静态 | 跳转到 `/setup/` |
+| `/setup` | 静态 + 客户端 | 表单、PDF 上传、预览 |
+| `/api/parse` | 服务端 | Claude API 调用（API key 不出现在浏览器） |
+| `/api/polish-entity` | 服务端 | 单条经历的 gap-fill 补充 |
+| `/api/deploy` | 服务端 | GitHub fork + commit 用户仓库 |
+| `/api/auth/*` | 服务端 | NextAuth GitHub OAuth |
 
-The form generates files entirely in the browser via `JSZip`. Only the
-LLM parsing step touches the server.
+## 成本与限流
 
-## Cost & rate limits
+- 每次解析：约 $0.005（Haiku 4.5，5K 输入 + 3K 输出 token）
+- 默认限流：每个 IP 每天 10 次（`RATE_LIMIT_PER_DAY` 可配置）
+- ⚠️ 当前限流是 in-memory per-process，Vercel serverless 冷启动会重置——
+  正式上线建议换成 Upstash Redis
+- 成本告警：`COST_ALERT_USD`（默认 20）
 
-- Per generation: ~$0.005 (5K input + 3K output tokens against Haiku 4.5).
-- Default rate limit: 10 generations / day / IP (configurable via
-  `RATE_LIMIT_PER_DAY` env). In-memory, per-process — replace with
-  Upstash/Redis once you have steady traffic.
-- Cost alert env: `COST_ALERT_USD` (default 20).
+## 部署
 
-## Deploy
-
-Vercel project, Node.js runtime (not Edge — pdf-parse needs Node APIs).
-Set `ANTHROPIC_API_KEY` in Project Settings → Environment Variables.
+Vercel 项目，Node.js runtime（不是 Edge——`pdf-parse` 需要 Node API）。
+环境变量都设到 Project Settings → Environment Variables。
 
 ## License
 
-MIT (see LICENSE).
-
-## Roadmap
-
-- **Phase 1B** (here): PDF / text → structured wiki data, manual deploy
-- Phase 1C: GitHub OAuth + auto-fork + Vercel Deploy Button (3-5h)
-- Phase 1B v2: LinkedIn URL + GitHub URL ingestion (3-5h)
-- Phase 2: Profile card generator (`@vercel/og` 1080×1350) integrated
+MIT (见 `LICENSE`)。

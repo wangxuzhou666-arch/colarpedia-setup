@@ -1,12 +1,5 @@
-// Heuristic completeness auditor for wiki form data.
-//
-// Runs entirely in the browser — zero LLM calls, zero tokens spent.
-// Generates "💡 you could improve this by …" suggestions to surface in
-// PreviewModal so the user knows what's still thin before they ship.
-//
-// Designed to be replaced/augmented later by a local small-model layer
-// — keep the input shape (form data) and output shape (Suggestion[])
-// stable so the upgrade is drop-in.
+// 表单完整度本地启发式检查器。
+// 全程在浏览器跑，不消耗 LLM 额度，输出 "你可以这样改进..." 提示放到 PreviewModal 里。
 
 const WIKILINK_RE = /\[\[([^\]|]+)(?:\|[^\]]+)?\]\]/g;
 
@@ -14,23 +7,6 @@ function countWikilinks(s) {
   if (!s) return 0;
   return (String(s).match(WIKILINK_RE) || []).length;
 }
-
-// Suggestion shape: { severity, message, action, fixField?, canPolish? }
-//   severity:  "info" | "tip" | "warn"
-//   message:   user-visible text
-//   action:    "fix-field" | "expand-row" | "upload" | "edit-bio"
-//   fixField:  { section: "identity" | "shipped" | "educations" | "experiences",
-//                idx?: number, field: string }
-//   canPolish: true  → suggestion eligible for /api/polish-entity gap-fill
-//                       (per-entity textual fields the LLM can extract from
-//                        a fresh PDF / pasted source)
-//              false → user has to fix in the form directly (photo upload,
-//                       contact URL, structural decisions like bio wikilinks)
-//
-// canPolish is a small flag the PreviewModal reads to decide whether to
-// show "+ Add material" next to a suggestion. Adding the flag here (vs
-// recomputing in the modal) keeps the rule centralised: the auditor
-// owns "what's missing AND what the LLM can plausibly fix".
 
 const POLISHABLE_FIELDS = new Set([
   "body",
@@ -47,7 +23,7 @@ const POLISHABLE_FIELDS = new Set([
 
 function isPolishable(fixField) {
   if (!fixField) return false;
-  if (fixField.section === "identity") return false; // identity gaps go to form
+  if (fixField.section === "identity") return false;
   if (fixField.idx === undefined) return false;
   return POLISHABLE_FIELDS.has(fixField.field);
 }
@@ -58,22 +34,20 @@ export function auditWikiData(data, files = {}) {
   const educations = (data.educations || []).filter((e) => e.name);
   const experiences = (data.experiences || []).filter((e) => e.name);
 
-  // ---- 1. Photo ----
+  // 1. 头像
   if (!files.photoFile) {
     out.push({
       severity: "tip",
-      message:
-        "Upload a portrait photo — the bio infobox currently shows a placeholder.",
+      message: "传一张头像吧——现在你的 wiki 信息卡里头像位置是空的。",
       action: "upload",
     });
   }
 
-  // ---- 2. Contact links ----
+  // 2. 联系方式
   if (!data.linkedin && !data.githubProfile && !data.email) {
     out.push({
       severity: "warn",
-      message:
-        "No contact info on file. At least one of email / LinkedIn / GitHub is recommended for a HR-readable wiki.",
+      message: "没填任何联系方式。建议至少留邮箱、领英、GitHub 中的一个，HR 才能联系到你。",
       action: "fix-field",
       fixField: { section: "identity", field: "linkedin" },
     });
@@ -81,7 +55,7 @@ export function auditWikiData(data, files = {}) {
     if (!data.linkedin) {
       out.push({
         severity: "tip",
-        message: "LinkedIn URL missing — add it for credibility.",
+        message: "没填领英 URL——加上能让 wiki 看起来更可信。",
         action: "fix-field",
         fixField: { section: "identity", field: "linkedin" },
       });
@@ -89,17 +63,14 @@ export function auditWikiData(data, files = {}) {
     if (!data.githubProfile && (shipped.length > 0)) {
       out.push({
         severity: "tip",
-        message:
-          "Projects listed but no GitHub profile — readers expect a GitHub link when you ship code.",
+        message: "你列了项目作品但没填 GitHub——读者一般会期待项目背后有 GitHub 链接。",
         action: "fix-field",
         fixField: { section: "identity", field: "githubProfile" },
       });
     }
   }
 
-  // ---- 3. Bio cross-link density ----
-  // Wikipedia-style bios link to schools / employers / projects naturally.
-  // Rule: if bio body has < 50% of (entity count) wikilinks, flag.
+  // 3. 简介内的交叉链接密度
   const totalEntities = shipped.length + educations.length + experiences.length;
   if (data.bio && totalEntities > 0) {
     const linkCount = countWikilinks(data.bio);
@@ -107,35 +78,35 @@ export function auditWikiData(data, files = {}) {
     if (ratio < 0.4) {
       out.push({
         severity: "tip",
-        message: `Bio links to ${linkCount} of ${totalEntities} entities. A Wikipedia-style bio normally cross-links most schools / employers / projects via [[Slug]] syntax.`,
+        message: `个人简介里只链接到了 ${linkCount} / ${totalEntities} 项经历。维基百科风格的 bio 通常会用 [[Slug]] 语法把大部分学校 / 公司 / 项目都链一下。`,
         action: "edit-bio",
         fixField: { section: "identity", field: "bio" },
       });
     }
   }
 
-  // ---- 4. Per-entity completeness ----
+  // 4. 单条经历完整度
   shipped.forEach((p, idx) => {
-    if (!p.body) {
+    if (!p.body && !p.body_zh) {
       out.push({
         severity: "tip",
-        message: `Project "${p.name}" has no body text — its standalone wiki page will be a stub. Add a 1-2 paragraph description.`,
+        message: `项目 "${p.name}" 没有详细介绍——它单独的 wiki 页面会很短。建议加 1-2 段说明。`,
         action: "expand-row",
-        fixField: { section: "shipped", idx, field: "body" },
+        fixField: { section: "shipped", idx, field: "body_zh" },
       });
     }
-    if (!p.role) {
+    if (!p.role && !p.role_zh) {
       out.push({
         severity: "info",
-        message: `Project "${p.name}" missing role (e.g. "Founder", "Lead Engineer").`,
+        message: `项目 "${p.name}" 没填你担任的角色（如"主创"、"后端开发"）。`,
         action: "expand-row",
-        fixField: { section: "shipped", idx, field: "role" },
+        fixField: { section: "shipped", idx, field: "role_zh" },
       });
     }
     if (!p.date_range) {
       out.push({
         severity: "info",
-        message: `Project "${p.name}" missing date range.`,
+        message: `项目 "${p.name}" 没填时间。`,
         action: "expand-row",
         fixField: { section: "shipped", idx, field: "date_range" },
       });
@@ -143,7 +114,7 @@ export function auditWikiData(data, files = {}) {
     if (!p.url) {
       out.push({
         severity: "info",
-        message: `Project "${p.name}" has no public URL — link to App Store / GitHub / live demo if any.`,
+        message: `项目 "${p.name}" 没有公开链接——如果有 App Store / GitHub / 演示链接建议加上。`,
         action: "expand-row",
         fixField: { section: "shipped", idx, field: "url" },
       });
@@ -151,26 +122,26 @@ export function auditWikiData(data, files = {}) {
   });
 
   educations.forEach((e, idx) => {
-    if (!e.body) {
+    if (!e.body && !e.body_zh) {
       out.push({
         severity: "tip",
-        message: `Education "${e.name}" has no body — its page will be a stub.`,
+        message: `教育经历 "${e.name}" 没有详细介绍——它的 wiki 页面会很短。`,
         action: "expand-row",
-        fixField: { section: "educations", idx, field: "body" },
+        fixField: { section: "educations", idx, field: "body_zh" },
       });
     }
-    if (!e.degree) {
+    if (!e.degree && !e.degree_zh) {
       out.push({
         severity: "info",
-        message: `Education "${e.name}" missing degree.`,
+        message: `教育经历 "${e.name}" 没填学位 / 专业。`,
         action: "expand-row",
-        fixField: { section: "educations", idx, field: "degree" },
+        fixField: { section: "educations", idx, field: "degree_zh" },
       });
     }
     if (!e.date_range) {
       out.push({
         severity: "info",
-        message: `Education "${e.name}" missing dates.`,
+        message: `教育经历 "${e.name}" 没填时间。`,
         action: "expand-row",
         fixField: { section: "educations", idx, field: "date_range" },
       });
@@ -178,62 +149,57 @@ export function auditWikiData(data, files = {}) {
   });
 
   experiences.forEach((e, idx) => {
-    if (!e.body) {
+    if (!e.body && !e.body_zh) {
       out.push({
         severity: "tip",
-        message: `Experience "${e.name}" has no body — its page will be a stub.`,
+        message: `工作经历 "${e.name}" 没有详细介绍——它的 wiki 页面会很短。`,
         action: "expand-row",
-        fixField: { section: "experiences", idx, field: "body" },
+        fixField: { section: "experiences", idx, field: "body_zh" },
       });
     }
-    if (!e.role) {
+    if (!e.role && !e.role_zh) {
       out.push({
         severity: "info",
-        message: `Experience "${e.name}" missing role / job title.`,
+        message: `工作经历 "${e.name}" 没填职位。`,
         action: "expand-row",
-        fixField: { section: "experiences", idx, field: "role" },
+        fixField: { section: "experiences", idx, field: "role_zh" },
       });
     }
     if (!e.date_range) {
       out.push({
         severity: "info",
-        message: `Experience "${e.name}" missing dates.`,
+        message: `工作经历 "${e.name}" 没填时间。`,
         action: "expand-row",
         fixField: { section: "experiences", idx, field: "date_range" },
       });
     }
   });
 
-  // ---- 5. Empty-payload sanity ----
+  // 5. 完全空的提醒
   if (totalEntities === 0) {
     out.push({
       severity: "warn",
-      message:
-        "No projects / education / experience entries yet. Add at least one to get a wiki worth linking — otherwise it's just the bio page alone.",
+      message: "还没填任何项目 / 教育 / 工作经历。至少加一条，wiki 才有内容可看，否则就只剩一页 bio。",
       action: "fix-field",
       fixField: { section: "shipped", field: "name" },
     });
   }
 
-  // ---- 6. Bilingual presence (zh) ----
-  const hasZh =
-    !!(data.bio_zh || data.tagline_zh || data.name_zh) ||
-    shipped.some((s) => s.description_zh || s.body_zh);
-  if (!hasZh && totalEntities > 0) {
+  // 6. 英文版（可选）
+  const hasEn = !!(data.bio || data.tagline);
+  if (!hasEn && totalEntities > 0) {
     out.push({
       severity: "info",
-      message:
-        "No Chinese version detected — your wiki will only have an English route. Add Chinese fields if you want /zh/ to render.",
+      message: "没填英文版内容——你的 wiki 只会有中文页面。如果想做双语版（海外 HR 可读），展开「想做英文版？」填一下。",
       action: "fix-field",
-      fixField: { section: "identity", field: "bio_zh" },
+      fixField: { section: "identity", field: "bio" },
     });
   }
 
-  // Decorate each suggestion with canPolish based on its fixField shape.
   return out.map((s) => ({ ...s, canPolish: isPolishable(s.fixField) }));
 }
 
-// Group suggestions for clean rendering: warns first, tips, infos last.
+// 按严重程度分组，warn 优先 → tip → info
 export function groupSuggestions(suggestions) {
   const buckets = { warn: [], tip: [], info: [] };
   for (const s of suggestions) {

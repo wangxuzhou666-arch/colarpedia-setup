@@ -5,24 +5,17 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useState } from "react";
 import { useSession, signIn, signOut } from "next-auth/react";
 import { setupSchema, deriveSlug } from "../lib/schema";
-import { generateZip, triggerDownload } from "../lib/generator";
 import UploadPanel from "./UploadPanel";
 import PreviewModal from "./PreviewModal";
 
-// Project-thumbnail slug. Falls back to project_<idx> if the project
-// hasn't been named yet — keeps the file path stable so the user can
-// upload a thumbnail before typing the name.
+// 项目缩略图的 slug 兜底——项目还没填名字时用 project_<idx>，
+// 这样用户先传图后填名也不会丢图。
 function projectSlug(name, idx) {
   const fromName = deriveSlug(name);
   return fromName || `project_${idx + 1}`;
 }
 
-// Decorate shipped[] with a thumbnailPath the wikiPageTemplate can
-// embed. mode="live" → /projects/<slug>.<ext> (zip + GitHub fork);
-// mode="preview" → blob: URL for images, fake relative path for PDFs
-// (PDFs have no cheap browser preview — the link visually confirms
-// "a PDF link will appear here on the live site"; clicking 404s, fine
-// for preview).
+// 给 shipped[] 加上 thumbnailPath，模板里好用 <img> 引用。
 function enrichShipped(data, thumbsByIdx, mode) {
   return {
     ...data,
@@ -32,10 +25,7 @@ function enrichShipped(data, thumbsByIdx, mode) {
       const slug = projectSlug(s.name, idx);
       let path;
       if (mode === "preview") {
-        path =
-          t.kind === "image"
-            ? t.previewUrl
-            : `${slug}.pdf`;
+        path = t.kind === "image" ? t.previewUrl : `${slug}.pdf`;
       } else {
         path = `/projects/${slug}.${t.ext}`;
       }
@@ -44,7 +34,6 @@ function enrichShipped(data, thumbsByIdx, mode) {
   };
 }
 
-// Convert a File blob to base64 (no data: URL prefix).
 function fileToBase64(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -53,7 +42,7 @@ function fileToBase64(file) {
       const comma = result.indexOf(",");
       resolve(comma >= 0 ? result.slice(comma + 1) : result);
     };
-    reader.onerror = () => reject(new Error("Failed to read photo file"));
+    reader.onerror = () => reject(new Error("照片读取失败"));
     reader.readAsDataURL(file);
   });
 }
@@ -65,8 +54,6 @@ const PHOTO_EXT_BY_TYPE = {
   "image/webp": "webp",
 };
 
-// Per-project attachment can be an image OR a PDF. PDFs are linked
-// from the bio's Notable works line; images become inline thumbnails.
 const PROJECT_ATTACHMENT_EXT_BY_TYPE = {
   "image/jpeg": "jpg",
   "image/jpg": "jpg",
@@ -82,24 +69,35 @@ function projectAttachmentExt(file) {
   const dot = file.name.lastIndexOf(".");
   if (dot < 0) return null;
   const tail = file.name.slice(dot + 1).toLowerCase();
-  return /^(jpg|jpeg|png|webp|pdf)$/.test(tail) ? tail.replace("jpeg", "jpg") : null;
+  return /^(jpg|jpeg|png|webp|pdf)$/.test(tail)
+    ? tail.replace("jpeg", "jpg")
+    : null;
+}
+
+// 把 deploy 接口的英文错误翻译成用户能 actionable 的中文
+function humanizeDeployError(raw) {
+  const msg = String(raw || "");
+  if (/rate limit|abuse/i.test(msg)) {
+    return "GitHub 这边短时间请求太多了，等几分钟再试。";
+  }
+  if (/fork/i.test(msg) && /fail/i.test(msg)) {
+    return "复制模板仓库失败。可能是 GitHub 暂时性故障，再试一次；如果反复失败，去你的 GitHub 看看是不是有同名仓库占用了。";
+  }
+  if (/auth|token|unauthor/i.test(msg)) {
+    return "GitHub 授权失效了。点上面「重新登录」再试。";
+  }
+  return msg || "上线失败，再试一次。";
 }
 
 export default function SetupForm() {
-  const [generating, setGenerating] = useState(false);
-  const [done, setDone] = useState(false);
   const [pdfFile, setPdfFile] = useState(null);
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreviewUrl, setPhotoPreviewUrl] = useState("");
   const [photoError, setPhotoError] = useState("");
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewData, setPreviewData] = useState(null);
-  // Project thumbnails — keyed by shipped[] idx. Stored outside the
-  // form because File objects don't survive zod / RHF, and useFieldArray
-  // doesn't know about per-row file uploads.
   const [projectThumbs, setProjectThumbs] = useState({});
   const [projectThumbErrors, setProjectThumbErrors] = useState({});
-  // Phase 1C — GitHub deploy state
   const { data: session, status: sessionStatus } = useSession();
   const [deployStep, setDeployStep] = useState("idle"); // idle | forking | committing | done | error
   const [deployResult, setDeployResult] = useState(null);
@@ -114,11 +112,6 @@ export default function SetupForm() {
     formState: { errors },
   } = useForm({
     resolver: zodResolver(setupSchema),
-    // onTouched: only validate fields the user has actually interacted
-    // with. Prevents stale errors from sticking around after schema
-    // changes (Phase 1B v2 has been iterating quickly on validation),
-    // and stops LLM-auto-filled fields from being flagged before the
-    // user has even seen them.
     mode: "onTouched",
     defaultValues: {
       name: "",
@@ -168,25 +161,45 @@ export default function SetupForm() {
     }
   }, [nameValue, slugTouched, setValue]);
 
-  const fillExample = () => {
-    setValue("name", "Jane Doe");
-    setValue("homepageSlug", "Jane_Doe");
+  // 中国留学生示例（找北美 SDE 实习）
+  const fillStudentExample = () => {
+    setValue("name", "Wang Xue");
+    setValue("name_zh", "王雪");
+    setValue("homepageSlug", "Wang_Xue");
     setSlugTouched(true);
-    setValue(
-      "tagline",
-      "Software engineer, writer, and occasional illustrator"
-    );
+    setValue("tagline", "Software engineer · UPenn MS · interested in AI tooling");
+    setValue("tagline_zh", "软件工程师 · 宾大硕士在读 · 对 AI 工具方向感兴趣");
     setValue(
       "bio",
-      "Doe began her career at a small open-source tools startup in Berlin, where she shipped a developer console used by tens of thousands of teams. She has written essays on the relationship between toolmaking and craft."
+      "Wang Xue is a Master of Science in Engineering candidate at the University of Pennsylvania, focusing on systems engineering and AI applications. She previously interned at China Galaxy Securities as a quantitative research intern, where she built backtesting tooling for futures strategies."
     );
-    setValue("siteName", "Doepedia");
-    setValue("metaBaseUrl", "https://janedoe.example.com");
-    setValue("githubOwner", "janedoe");
-    setValue("githubRepo", "janedoe-wiki");
-    setValue("email", "jane@example.com");
-    setValue("linkedin", "https://www.linkedin.com/in/janedoe/");
-    setValue("githubProfile", "https://github.com/janedoe");
+    setValue(
+      "bio_zh",
+      "王雪是宾夕法尼亚大学系统工程方向的硕士在读生，研究方向涉及系统工程与 AI 应用。本科期间曾在中国银河证券担任量化研究实习生，主要负责期货策略回测工具的开发。"
+    );
+    setValue("email", "wangxue@example.com");
+    setValue("linkedin", "linkedin.com/in/wangxue");
+    setValue("githubProfile", "github.com/wangxue");
+  };
+
+  // 中国转行老师示例
+  const fillTeacherExample = () => {
+    setValue("name", "Wang Wei");
+    setValue("name_zh", "王伟");
+    setValue("homepageSlug", "Wang_Wei");
+    setSlugTouched(true);
+    setValue("tagline", "Educator turned product builder · 8 years of teaching · interested in EdTech");
+    setValue("tagline_zh", "高校讲师 · 8 年教学经验 · 正在转型教育科技产品");
+    setValue(
+      "bio",
+      "Wang Wei is a lecturer at a 985 university with 8 years of teaching experience and 12 published papers. He is currently transitioning into product management, with a focus on education technology."
+    );
+    setValue(
+      "bio_zh",
+      "王伟是某 985 高校讲师，从事教学工作 8 年，发表论文 12 篇。曾创办教育 SaaS 创业项目（已退出），目前正在向互联网产品方向转型，关注教育科技领域。"
+    );
+    setValue("email", "wangwei@example.com");
+    setValue("linkedin", "linkedin.com/in/wangwei");
   };
 
   const setThumbError = (idx, msg) => {
@@ -212,7 +225,7 @@ export default function SetupForm() {
     }
     const ext = projectAttachmentExt(f);
     if (!ext) {
-      setThumbError(idx, "Use an image (JPG / PNG / WebP) or a PDF.");
+      setThumbError(idx, "只支持图片（JPG / PNG / WebP）或 PDF。");
       return;
     }
     const kind = ext === "pdf" ? "pdf" : "image";
@@ -220,12 +233,10 @@ export default function SetupForm() {
     if (f.size > sizeLimit) {
       setThumbError(
         idx,
-        kind === "pdf" ? "PDF too large (max 10 MB)." : "Image too large (max 3 MB)."
+        kind === "pdf" ? "PDF 太大（最多 10 MB）。" : "图片太大（最多 3 MB）。"
       );
       return;
     }
-    // Only images get a blob preview URL — PDFs render as a labeled
-    // card in the form (no browser-cheap PDF thumbnail rendering).
     const previewUrl = kind === "image" ? URL.createObjectURL(f) : null;
     setProjectThumbs((prev) => {
       const cur = prev[idx];
@@ -237,9 +248,6 @@ export default function SetupForm() {
     });
   };
 
-  // useFieldArray's `remove(idx)` shifts subsequent rows down by one.
-  // Mirror that shift in the thumbs map so each thumb stays paired with
-  // its row.
   const removeProjectRow = (idx) => {
     remove(idx);
     setProjectThumbs((prev) => {
@@ -264,9 +272,6 @@ export default function SetupForm() {
     });
   };
 
-  // The LLM upload path calls replace() to wholesale-reset shipped[].
-  // The previous thumbs were attached to projects that no longer exist,
-  // so nuke them — the user re-uploads against the new rows.
   const replaceShippedAndClearThumbs = (newShipped) => {
     setProjectThumbs((prev) => {
       Object.values(prev).forEach((t) => {
@@ -278,14 +283,11 @@ export default function SetupForm() {
     replace(newShipped);
   };
 
-  // Auto-derive slug from name on add (user can override).
   const deriveOrKeep = (entity) => ({
     ...entity,
     slug: entity.slug || deriveSlug(entity.name || ""),
   });
 
-  // Revoke any blob URLs still alive when the form unmounts (zip/deploy
-  // paths don't release them on success — preview re-uses them).
   useEffect(() => {
     return () => {
       Object.values(projectThumbs).forEach((t) => {
@@ -303,11 +305,11 @@ export default function SetupForm() {
       return;
     }
     if (!f.type?.startsWith("image/")) {
-      setPhotoError("Photo must be an image (JPG / PNG / WebP).");
+      setPhotoError("头像必须是图片（JPG / PNG / WebP）。");
       return;
     }
     if (f.size > 3 * 1024 * 1024) {
-      setPhotoError("Photo too large (max 3 MB).");
+      setPhotoError("图片太大（最多 3 MB）。");
       return;
     }
     setPhotoFile(f);
@@ -315,8 +317,7 @@ export default function SetupForm() {
     setPhotoPreviewUrl(URL.createObjectURL(f));
   };
 
-  // Auto-normalize URL-ish fields users pasted without a protocol.
-  // "linkedin.com/in/me" -> "https://linkedin.com/in/me"
+  // 用户粘贴 URL 没带协议时自动补 https://
   const normalizeUrl = (v) => {
     if (!v) return "";
     const trimmed = v.trim();
@@ -331,8 +332,6 @@ export default function SetupForm() {
     setDeployStep("forking");
     try {
       const raw = watch();
-      // Same normalization the zip path uses, so the Vercel deploy
-      // gets clean URLs.
       const formData = {
         ...raw,
         linkedin: normalizeUrl(raw.linkedin),
@@ -340,19 +339,13 @@ export default function SetupForm() {
         metaBaseUrl: normalizeUrl(raw.metaBaseUrl) || "",
       };
       if (!formData.name || !formData.homepageSlug) {
-        throw new Error(
-          "Please fill in your name (we use it for the slug)."
-        );
+        throw new Error("先在上面填一下姓名（我们用它来生成 wiki 页面的链接）。");
       }
       const photoBase64 = photoFile ? await fileToBase64(photoFile) : null;
       const photoExt = photoFile
         ? PHOTO_EXT_BY_TYPE[photoFile.type] || "jpg"
         : null;
 
-      // Build the projectThumbs payload the server expects:
-      // [{ idx, slug, ext, base64 }]. Skip rows whose project name is
-      // empty (slug would collide with project_<n> fallback, which is
-      // ugly; better the user names the project first).
       const thumbPayload = [];
       for (const [k, t] of Object.entries(projectThumbs)) {
         const idx = Number(k);
@@ -379,60 +372,24 @@ export default function SetupForm() {
       });
       const json = await res.json();
       if (!res.ok) {
-        throw new Error(json.error || `Deploy failed (${res.status})`);
+        throw new Error(json.error || `上线失败（${res.status}）`);
       }
       setDeployResult(json);
       setDeployStep("done");
     } catch (e) {
-      setDeployError(e.message || "Deploy failed.");
+      setDeployError(humanizeDeployError(e.message));
       setDeployStep("error");
     }
   };
 
-  const onSubmit = async (rawData) => {
-    setGenerating(true);
-    setDone(false);
-    try {
-      const normalized = {
-        ...rawData,
-        linkedin: normalizeUrl(rawData.linkedin),
-        githubProfile: normalizeUrl(rawData.githubProfile),
-        metaBaseUrl: normalizeUrl(rawData.metaBaseUrl) || "https://example.com",
-        githubOwner: rawData.githubOwner || "your-github-username",
-        githubRepo: rawData.githubRepo || "your-wiki-repo",
-      };
-      // Decorate shipped[] so wikiPageTemplate emits <img> tags pointing
-      // at /projects/<slug>.<ext> in the deployed site.
-      const data = enrichShipped(normalized, projectThumbs, "live");
-
-      // Build the projectThumbs the zip generator expects:
-      // [{ slug, ext, file }]. Filter out rows without a project name.
-      const zipThumbs = Object.entries(projectThumbs)
-        .map(([k, t]) => {
-          const idx = Number(k);
-          const project = (normalized.shipped || [])[idx];
-          if (!project?.name) return null;
-          return {
-            slug: projectSlug(project.name, idx),
-            ext: t.ext,
-            file: t.file,
-          };
-        })
-        .filter(Boolean);
-
-      const blob = await generateZip(data, {
-        pdfFile,
-        photoFile,
-        projectThumbs: zipThumbs,
-      });
-      const zipName = (data.siteName || "yourpedia").toLowerCase().replace(/[^a-z0-9]/g, "");
-      triggerDownload(blob, `${zipName}-${data.homepageSlug}.zip`);
-      setDone(true);
-    } catch (e) {
-      alert("Generation failed: " + e.message);
-    } finally {
-      setGenerating(false);
+  // 表单整体 submit 直接走 deploy 路径——只有在用户已经登录 GitHub 时才会触发。
+  const onSubmit = async () => {
+    if (sessionStatus !== "authenticated") {
+      // 未登录的话 submit 按钮已经被替换为登录按钮了，这里兜底
+      signIn("github");
+      return;
     }
+    await handleDeploy();
   };
 
   return (
@@ -447,76 +404,88 @@ export default function SetupForm() {
       />
 
       <div className="setup-example-bar">
-        <span>Or skip the upload and fill manually:</span>
-        <button type="button" onClick={fillExample} className="setup-button">
-          Fill with Jane Doe
+        <span>不想上传简历？试试用示例填一份看看效果：</span>
+        <button type="button" onClick={fillStudentExample} className="setup-button">
+          填入「中国留学生」示例
+        </button>
+        <button
+          type="button"
+          onClick={fillTeacherExample}
+          className="setup-button"
+          style={{ marginLeft: 8 }}
+        >
+          填入「中国教师转行」示例
         </button>
       </div>
 
-      {/* Identity */}
+      {/* 第二步：核对 + 编辑 */}
+      <h2 className="setup-section-heading" style={{ marginTop: 32 }}>
+        第二步 · 核对并编辑信息
+      </h2>
+      <p className="setup-help" style={{ marginTop: -8, marginBottom: 14 }}>
+        Claude 已经把识别到的内容填到下面表单里，看一眼有没有错漏。
+        所有英文版字段都是<strong>选填</strong>——只填中文也能上线。
+      </p>
+
+      {/* 个人信息 */}
       <div className="setup-section">
-        <h2 className="setup-section-heading">Identity</h2>
+        <h3 className="setup-section-heading">个人信息</h3>
 
         <div className="setup-field">
-          <label className="setup-label setup-label-required">Full name</label>
+          <label className="setup-label setup-label-required">中文姓名</label>
+          <input
+            {...register("name_zh")}
+            className="setup-input"
+            placeholder="王雪"
+          />
+        </div>
+
+        <div className="setup-field">
+          <label className="setup-label setup-label-required">英文姓名（用作链接）</label>
           <input
             {...register("name")}
             className="setup-input"
-            placeholder="Jane Doe"
+            placeholder="Wang Xue"
           />
+          <div className="setup-help">
+            会被用作你 wiki 页面的链接（如 yoursite.com/wiki/Wang_Xue/）。
+            没有英文名也可以填拼音。
+          </div>
           {errors.name && (
             <div className="setup-error">{errors.name.message}</div>
           )}
         </div>
 
         <div className="setup-field">
-          <label className="setup-label setup-label-required">
-            Homepage slug
-          </label>
+          <label className="setup-label">一句话介绍</label>
           <input
-            {...register("homepageSlug")}
-            onChange={(e) => {
-              setSlugTouched(true);
-              register("homepageSlug").onChange(e);
-            }}
+            {...register("tagline_zh")}
             className="setup-input"
-            placeholder="Jane_Doe"
-          />
-          <div className="setup-help">
-            URL slug for your bio page (e.g. /wiki/Jane_Doe/). Use
-            Title_Case_With_Underscores. Auto-derived from your name.
-          </div>
-          {errors.homepageSlug && (
-            <div className="setup-error">{errors.homepageSlug.message}</div>
-          )}
-        </div>
-
-        <div className="setup-field">
-          <label className="setup-label">One-line tagline</label>
-          <input
-            {...register("tagline")}
-            className="setup-input"
-            placeholder="Software engineer, writer, and occasional illustrator"
+            placeholder="软件工程师 · 宾大硕士在读 · 关注 AI 工具方向"
           />
         </div>
 
         <div className="setup-field">
-          <label className="setup-label">Bio (free-form prose)</label>
+          <label className="setup-label">个人简介</label>
           <textarea
-            {...register("bio")}
+            {...register("bio_zh")}
             rows={5}
             className="setup-textarea"
-            placeholder="Write your story Wikipedia-style. Third person. A few paragraphs."
+            placeholder="用第三人称写几段话介绍你自己，像维基百科一样。例如：王雪是宾夕法尼亚大学系统工程方向的硕士在读生..."
           />
+          <div className="setup-help">
+            建议用<strong>第三人称</strong>（"王雪是..." 而不是 "我是..."），更像维基百科风格。
+            不会写？没关系，先随便写两句，之后还能用 AI 帮你润色。
+          </div>
         </div>
 
         <div className="setup-field">
-          <label className="setup-label">Portrait photo (optional)</label>
+          <label className="setup-label">头像（选填）</label>
           <div className="photo-row">
             {photoPreviewUrl && (
               <img
                 src={photoPreviewUrl}
-                alt="Portrait preview"
+                alt="头像预览"
                 className="photo-preview"
               />
             )}
@@ -534,118 +503,49 @@ export default function SetupForm() {
                   className="setup-button"
                   style={{ marginLeft: 8 }}
                 >
-                  Remove
+                  移除
                 </button>
               )}
             </div>
           </div>
           <div className="setup-help">
-            Square crop recommended (600×600+). Will be saved as
-            <code> public/portrait.&lt;ext&gt; </code> in your zip and
-            wired into the bio infobox automatically. JPG / PNG / WebP, max 3 MB.
+            建议方形头像（600×600 以上）。JPG / PNG / WebP，最大 3 MB。
           </div>
           {photoError && <div className="setup-error">{photoError}</div>}
         </div>
-      </div>
 
-      {/* Site */}
-      <div className="setup-section">
-        <h2 className="setup-section-heading">Site</h2>
-
-        <div className="setup-field">
-          <label className="setup-label setup-label-required">Site name</label>
-          <input
-            {...register("siteName")}
-            className="setup-input"
-            placeholder="Yourpedia"
-          />
-          <div className="setup-help">
-            Shown in the top bar of your site. The default is
-            &quot;Yourpedia&quot; &mdash; rename it to anything you
-            want (e.g. &quot;Janepedia&quot;, &quot;Doepedia&quot;,
-            &quot;MyWiki&quot;).
-          </div>
-          {errors.siteName && (
-            <div className="setup-error">{errors.siteName.message}</div>
-          )}
-        </div>
-
-      </div>
-
-      {/* Advanced — collapsed by default. The fields here all need to
-          be filled AFTER deploy (Site URL only exists once Vercel has
-          assigned one; GitHub owner/repo only exist once you've pushed
-          your wiki to GitHub). Hidden by default so users don't get
-          stuck on chicken-and-egg fields on first run. */}
-      <details className="setup-advanced">
-        <summary>
-          <span className="setup-advanced-title">
-            Advanced — fill after deploy
-          </span>
-          <span className="setup-advanced-hint">
-            Site URL · GitHub repo · all optional. Skip for now and edit
-            <code> site.config.js </code> after your first deploy.
-          </span>
-        </summary>
-
-        <div className="setup-field" style={{ marginTop: 14 }}>
-          <label className="setup-label">Site URL</label>
-          <input
-            {...register("metaBaseUrl")}
-            className="setup-input"
-            placeholder="your-site.vercel.app"
-          />
-          <div className="setup-help">
-            Where your site will live after deploy. Leave empty if you
-            haven't deployed yet — we'll insert a placeholder you can
-            update later in <code>site.config.js</code>.
-          </div>
-          {errors.metaBaseUrl && (
-            <div className="setup-error">{errors.metaBaseUrl.message}</div>
-          )}
-        </div>
-
-        <div className="setup-field-row">
-          <div className="setup-field">
-            <label className="setup-label">GitHub owner</label>
+        <details className="setup-array-details" style={{ marginTop: 8 }}>
+          <summary>想做英文版？展开填英文姓名 / 简介</summary>
+          <div className="setup-field" style={{ marginTop: 12 }}>
+            <label className="setup-label">英文一句话介绍</label>
             <input
-              {...register("githubOwner")}
+              {...register("tagline")}
               className="setup-input"
-              placeholder="your-github-username"
+              placeholder="Software engineer, UPenn MS, interested in AI tooling"
             />
-            {errors.githubOwner && (
-              <div className="setup-error">{errors.githubOwner.message}</div>
-            )}
           </div>
           <div className="setup-field">
-            <label className="setup-label">GitHub repo</label>
-            <input
-              {...register("githubRepo")}
-              className="setup-input"
-              placeholder="your-wiki-repo"
+            <label className="setup-label">英文简介（bio）</label>
+            <textarea
+              {...register("bio")}
+              rows={4}
+              className="setup-textarea"
+              placeholder="Write your story in third person, Wikipedia-style..."
             />
-            {errors.githubRepo && (
-              <div className="setup-error">{errors.githubRepo.message}</div>
-            )}
           </div>
-        </div>
-        <div className="setup-help">
-          Drives the "View source / Talk / History" links at the top of
-          every wiki page. Set after you create the GitHub repo for
-          your wiki.
-        </div>
-      </details>
+        </details>
+      </div>
 
-      {/* Contact */}
+      {/* 联系方式 */}
       <div className="setup-section">
-        <h2 className="setup-section-heading">Contact (all optional)</h2>
+        <h3 className="setup-section-heading">联系方式（选填，建议至少留一个）</h3>
 
         <div className="setup-field">
-          <label className="setup-label">Email</label>
+          <label className="setup-label">邮箱</label>
           <input
             {...register("email")}
             className="setup-input"
-            placeholder="jane@example.com"
+            placeholder="wangxue@example.com"
           />
           {errors.email && (
             <div className="setup-error">{errors.email.message}</div>
@@ -653,15 +553,14 @@ export default function SetupForm() {
         </div>
 
         <div className="setup-field">
-          <label className="setup-label">LinkedIn</label>
+          <label className="setup-label">领英 LinkedIn</label>
           <input
             {...register("linkedin")}
             className="setup-input"
-            placeholder="linkedin.com/in/janedoe"
+            placeholder="linkedin.com/in/wangxue"
           />
           <div className="setup-help">
-            Paste your profile URL or just the handle path. We&apos;ll
-            add <code>https://</code> for you if it&apos;s missing.
+            粘贴你的领英主页链接，或直接填路径，不需要 https://。
           </div>
           {errors.linkedin && (
             <div className="setup-error">{errors.linkedin.message}</div>
@@ -669,11 +568,11 @@ export default function SetupForm() {
         </div>
 
         <div className="setup-field">
-          <label className="setup-label">GitHub profile</label>
+          <label className="setup-label">GitHub</label>
           <input
             {...register("githubProfile")}
             className="setup-input"
-            placeholder="github.com/janedoe"
+            placeholder="github.com/wangxue"
           />
           {errors.githubProfile && (
             <div className="setup-error">{errors.githubProfile.message}</div>
@@ -681,12 +580,12 @@ export default function SetupForm() {
         </div>
       </div>
 
-      {/* Shipped */}
+      {/* 项目作品 */}
       <div className="setup-section">
-        <h2 className="setup-section-heading">Notable works (optional)</h2>
+        <h3 className="setup-section-heading">项目作品（选填）</h3>
         <div className="setup-help" style={{ marginTop: -8, marginBottom: 12 }}>
-          Listed in your bio's "Notable works" section. Add as many as
-          you want. Each will become its own wiki page later.
+          课程作业、GitHub 仓库、个人项目、参与过的产品都算。
+          每个项目会单独生成一个 wiki 页面。
         </div>
 
         {fields.map((field, idx) => {
@@ -695,7 +594,7 @@ export default function SetupForm() {
           return (
             <div key={field.id} className="setup-array-row">
               <div>
-                <label className="setup-label">Name</label>
+                <label className="setup-label">项目名</label>
                 <input
                   {...register(`shipped.${idx}.name`)}
                   className="setup-input"
@@ -703,11 +602,11 @@ export default function SetupForm() {
                 />
               </div>
               <div>
-                <label className="setup-label">Description</label>
+                <label className="setup-label">一句话简介</label>
                 <input
                   {...register(`shipped.${idx}.description`)}
                   className="setup-input"
-                  placeholder="open-source dev console (2024)"
+                  placeholder="开源命令行工具，2024 年发布"
                 />
               </div>
               <button
@@ -715,7 +614,7 @@ export default function SetupForm() {
                 onClick={() => removeProjectRow(idx)}
                 className="setup-button"
               >
-                Remove
+                删除
               </button>
               <div className="project-thumb-row">
                 {thumb?.kind === "image" && thumb.previewUrl && (
@@ -740,7 +639,7 @@ export default function SetupForm() {
                 )}
                 <div className="project-thumb-controls">
                   <label className="setup-label">
-                    Thumbnail or PDF (optional)
+                    缩略图或 PDF（选填）
                   </label>
                   <input
                     type="file"
@@ -757,21 +656,76 @@ export default function SetupForm() {
                       className="setup-button"
                       style={{ marginLeft: 8 }}
                     >
-                      Remove
+                      移除
                     </button>
                   )}
                   <div className="setup-help">
-                    <strong>Image</strong> (JPG / PNG / WebP, max 3 MB) →
-                    rendered as a thumbnail next to this project.{" "}
-                    <strong>PDF</strong> (max 10 MB) → linked at the end
-                    of the line. Saved as{" "}
-                    <code>public/projects/&lt;slug&gt;.&lt;ext&gt;</code>.
+                    <strong>图片</strong>（JPG / PNG / WebP，最大 3 MB）会显示在项目右侧。
+                    <strong>PDF</strong>（最大 10 MB）会显示为可下载的文档链接。
                   </div>
                   {thumbErr && (
                     <div className="setup-error">{thumbErr}</div>
                   )}
                 </div>
               </div>
+              <details
+                className="setup-array-details"
+                style={{ gridColumn: "1 / -1", marginTop: 6 }}
+              >
+                <summary>更多字段（角色 / 时间 / 链接 / 详情 / 英文版）</summary>
+                <div className="setup-field-row" style={{ marginTop: 10 }}>
+                  <div>
+                    <label className="setup-label">担任角色</label>
+                    <input
+                      {...register(`shipped.${idx}.role`)}
+                      className="setup-input"
+                      placeholder="主创 / 后端开发 / 设计"
+                    />
+                  </div>
+                  <div>
+                    <label className="setup-label">时间</label>
+                    <input
+                      {...register(`shipped.${idx}.date_range`)}
+                      className="setup-input"
+                      placeholder="2024 春"
+                    />
+                  </div>
+                </div>
+                <div className="setup-field" style={{ marginTop: 10 }}>
+                  <label className="setup-label">项目链接</label>
+                  <input
+                    {...register(`shipped.${idx}.url`)}
+                    className="setup-input"
+                    placeholder="github.com/yourname/projectone"
+                  />
+                </div>
+                <div className="setup-field" style={{ marginTop: 10 }}>
+                  <label className="setup-label">详细介绍（中文）</label>
+                  <textarea
+                    {...register(`shipped.${idx}.body_zh`)}
+                    rows={3}
+                    className="setup-textarea"
+                    placeholder="项目背景、解决了什么问题、技术方案、产出..."
+                  />
+                </div>
+                <div className="setup-field" style={{ marginTop: 10 }}>
+                  <label className="setup-label">英文版简介（选填）</label>
+                  <input
+                    {...register(`shipped.${idx}.description`)}
+                    className="setup-input"
+                    placeholder="open-source dev console (2024)"
+                  />
+                </div>
+                <div className="setup-field" style={{ marginTop: 10 }}>
+                  <label className="setup-label">英文详情（选填）</label>
+                  <textarea
+                    {...register(`shipped.${idx}.body`)}
+                    rows={3}
+                    className="setup-textarea"
+                    placeholder="Project background, problem, approach, outcome..."
+                  />
+                </div>
+              </details>
             </div>
           );
         })}
@@ -790,29 +744,31 @@ export default function SetupForm() {
           }
           className="setup-button-add"
         >
-          + Add a shipped project
+          + 添加一个项目
         </button>
       </div>
 
-      {/* Education */}
+      {/* 教育经历 */}
       <div className="setup-section">
-        <h2 className="setup-section-heading">Education (optional)</h2>
+        <h3 className="setup-section-heading">教育经历（选填）</h3>
         <div className="setup-help" style={{ marginTop: -8, marginBottom: 12 }}>
-          Each entry becomes its own wiki page. Slug auto-derives from
-          name. Body fields (English / Chinese) get auto-filled by the
-          LLM from your PDF — leave empty if filling manually and a stub
-          page will be generated.
+          每段经历会生成一个学校的 wiki 页面。详情可以让 AI 从你的简历自动填，
+          也可以手动写。
         </div>
         {eduFields.map((field, idx) => (
           <div key={field.id} className="setup-array-row">
             <div>
-              <label className="setup-label">Institution</label>
+              <label className="setup-label">学校</label>
+              <input
+                {...register(`educations.${idx}.name_zh`)}
+                className="setup-input"
+                placeholder="宾夕法尼亚大学"
+              />
               <input
                 {...register(`educations.${idx}.name`)}
                 className="setup-input"
-                placeholder="University of Pennsylvania"
+                placeholder="University of Pennsylvania（英文，选填）"
                 onBlur={(e) => {
-                  // Auto-fill slug from name if user hasn't set one yet
                   const cur = watch(`educations.${idx}.slug`);
                   if (!cur && e.target.value) {
                     setValue(
@@ -822,14 +778,21 @@ export default function SetupForm() {
                     );
                   }
                 }}
+                style={{ marginTop: 6 }}
               />
             </div>
             <div>
-              <label className="setup-label">Degree</label>
+              <label className="setup-label">学位 / 专业</label>
+              <input
+                {...register(`educations.${idx}.degree_zh`)}
+                className="setup-input"
+                placeholder="系统工程硕士"
+              />
               <input
                 {...register(`educations.${idx}.degree`)}
                 className="setup-input"
-                placeholder="MSE in Systems Engineering"
+                placeholder="MSE in Systems Engineering（英文，选填）"
+                style={{ marginTop: 6 }}
               />
             </div>
             <button
@@ -837,48 +800,39 @@ export default function SetupForm() {
               onClick={() => removeEdu(idx)}
               className="setup-button"
             >
-              Remove
+              删除
             </button>
             <details
               className="setup-array-details"
               style={{ gridColumn: "1 / -1", marginTop: 6 }}
             >
-              <summary>More fields (slug · dates · location · zh)</summary>
+              <summary>更多字段（时间 / 地点 / 详情）</summary>
               <div className="setup-field-row" style={{ marginTop: 10 }}>
                 <div>
-                  <label className="setup-label">Slug</label>
-                  <input
-                    {...register(`educations.${idx}.slug`)}
-                    className="setup-input"
-                    placeholder="University_of_Pennsylvania"
-                  />
-                </div>
-                <div>
-                  <label className="setup-label">Dates</label>
+                  <label className="setup-label">时间</label>
                   <input
                     {...register(`educations.${idx}.date_range`)}
                     className="setup-input"
-                    placeholder="Aug 2025 – Aug 2027 (expected)"
+                    placeholder="2025 年 8 月 – 2027 年 8 月（在读）"
                   />
                 </div>
-              </div>
-              <div className="setup-field-row">
                 <div>
-                  <label className="setup-label">Location</label>
+                  <label className="setup-label">地点</label>
                   <input
                     {...register(`educations.${idx}.location`)}
                     className="setup-input"
-                    placeholder="Philadelphia, Pennsylvania, U.S."
+                    placeholder="美国宾夕法尼亚州费城"
                   />
                 </div>
-                <div>
-                  <label className="setup-label">Name (zh)</label>
-                  <input
-                    {...register(`educations.${idx}.name_zh`)}
-                    className="setup-input"
-                    placeholder="宾夕法尼亚大学"
-                  />
-                </div>
+              </div>
+              <div className="setup-field" style={{ marginTop: 10 }}>
+                <label className="setup-label">详情（中文）</label>
+                <textarea
+                  {...register(`educations.${idx}.body_zh`)}
+                  rows={3}
+                  className="setup-textarea"
+                  placeholder="学习方向、核心课程、学术活动、奖项..."
+                />
               </div>
             </details>
           </div>
@@ -898,25 +852,29 @@ export default function SetupForm() {
           }
           className="setup-button-add"
         >
-          + Add an education entry
+          + 添加一段教育经历
         </button>
       </div>
 
-      {/* Experience */}
+      {/* 工作经历 */}
       <div className="setup-section">
-        <h2 className="setup-section-heading">Experience (optional)</h2>
+        <h3 className="setup-section-heading">工作经历（选填）</h3>
         <div className="setup-help" style={{ marginTop: -8, marginBottom: 12 }}>
-          Each entry becomes its own wiki page (employer profile + your
-          role). LLM auto-fills body content from your PDF.
+          每段经历会生成一个公司的 wiki 页面（公司介绍 + 你担任的角色）。
         </div>
         {expFields.map((field, idx) => (
           <div key={field.id} className="setup-array-row">
             <div>
-              <label className="setup-label">Employer</label>
+              <label className="setup-label">公司</label>
+              <input
+                {...register(`experiences.${idx}.name_zh`)}
+                className="setup-input"
+                placeholder="中国银河证券"
+              />
               <input
                 {...register(`experiences.${idx}.name`)}
                 className="setup-input"
-                placeholder="China Galaxy Securities"
+                placeholder="China Galaxy Securities（英文，选填）"
                 onBlur={(e) => {
                   const cur = watch(`experiences.${idx}.slug`);
                   if (!cur && e.target.value) {
@@ -927,14 +885,21 @@ export default function SetupForm() {
                     );
                   }
                 }}
+                style={{ marginTop: 6 }}
               />
             </div>
             <div>
-              <label className="setup-label">Role</label>
+              <label className="setup-label">职位</label>
+              <input
+                {...register(`experiences.${idx}.role_zh`)}
+                className="setup-input"
+                placeholder="量化研究实习生"
+              />
               <input
                 {...register(`experiences.${idx}.role`)}
                 className="setup-input"
-                placeholder="Quantitative Research Intern"
+                placeholder="Quantitative Research Intern（英文，选填）"
+                style={{ marginTop: 6 }}
               />
             </div>
             <button
@@ -942,48 +907,39 @@ export default function SetupForm() {
               onClick={() => removeExp(idx)}
               className="setup-button"
             >
-              Remove
+              删除
             </button>
             <details
               className="setup-array-details"
               style={{ gridColumn: "1 / -1", marginTop: 6 }}
             >
-              <summary>More fields (slug · dates · location · zh)</summary>
+              <summary>更多字段（时间 / 地点 / 详情）</summary>
               <div className="setup-field-row" style={{ marginTop: 10 }}>
                 <div>
-                  <label className="setup-label">Slug</label>
-                  <input
-                    {...register(`experiences.${idx}.slug`)}
-                    className="setup-input"
-                    placeholder="China_Galaxy_Securities"
-                  />
-                </div>
-                <div>
-                  <label className="setup-label">Dates</label>
+                  <label className="setup-label">时间</label>
                   <input
                     {...register(`experiences.${idx}.date_range`)}
                     className="setup-input"
-                    placeholder="Summer 2024"
+                    placeholder="2024 年夏"
                   />
                 </div>
-              </div>
-              <div className="setup-field-row">
                 <div>
-                  <label className="setup-label">Location</label>
+                  <label className="setup-label">地点</label>
                   <input
                     {...register(`experiences.${idx}.location`)}
                     className="setup-input"
-                    placeholder="Shanghai, China"
+                    placeholder="上海"
                   />
                 </div>
-                <div>
-                  <label className="setup-label">Name (zh)</label>
-                  <input
-                    {...register(`experiences.${idx}.name_zh`)}
-                    className="setup-input"
-                    placeholder="中国银河证券"
-                  />
-                </div>
+              </div>
+              <div className="setup-field" style={{ marginTop: 10 }}>
+                <label className="setup-label">详情（中文）</label>
+                <textarea
+                  {...register(`experiences.${idx}.body_zh`)}
+                  rows={3}
+                  className="setup-textarea"
+                  placeholder="负责的项目、产出、技术栈、合作团队..."
+                />
               </div>
             </details>
           </div>
@@ -1003,12 +959,98 @@ export default function SetupForm() {
           }
           className="setup-button-add"
         >
-          + Add a work experience
+          + 添加一段工作经历
         </button>
       </div>
 
-      {/* Submit */}
-      <div className="setup-section" style={{ marginTop: 36 }}>
+      {/* 高级设置——已 deploy 后再回来填 */}
+      <details className="setup-advanced">
+        <summary>
+          <span className="setup-advanced-title">高级设置（一般不用动）</span>
+          <span className="setup-advanced-hint">
+            站点名称 · GitHub 仓库名 · 站点域名 —— 上线后想换再来改
+          </span>
+        </summary>
+
+        <div className="setup-field" style={{ marginTop: 14 }}>
+          <label className="setup-label">站点名称</label>
+          <input
+            {...register("siteName")}
+            className="setup-input"
+            placeholder="Yourpedia"
+          />
+          <div className="setup-help">
+            显示在你网站顶部的名字（默认是 "Yourpedia"，可以改成 "Wangpedia" 之类的）。
+          </div>
+          {errors.siteName && (
+            <div className="setup-error">{errors.siteName.message}</div>
+          )}
+        </div>
+
+        <div className="setup-field">
+          <label className="setup-label">个人主页 slug</label>
+          <input
+            {...register("homepageSlug")}
+            onChange={(e) => {
+              setSlugTouched(true);
+              register("homepageSlug").onChange(e);
+            }}
+            className="setup-input"
+            placeholder="Wang_Xue"
+          />
+          <div className="setup-help">
+            你 wiki 主页的 URL 后缀（例如 /wiki/Wang_Xue/）。
+            会从英文姓名自动生成，一般不用改。
+          </div>
+          {errors.homepageSlug && (
+            <div className="setup-error">{errors.homepageSlug.message}</div>
+          )}
+        </div>
+
+        <div className="setup-field">
+          <label className="setup-label">站点域名</label>
+          <input
+            {...register("metaBaseUrl")}
+            className="setup-input"
+            placeholder="your-site.vercel.app"
+          />
+          <div className="setup-help">
+            上线后 Vercel 给你的网址（如 wangxue.vercel.app）。
+            没上线前先空着，上线之后回来改。
+          </div>
+          {errors.metaBaseUrl && (
+            <div className="setup-error">{errors.metaBaseUrl.message}</div>
+          )}
+        </div>
+
+        <div className="setup-field-row">
+          <div className="setup-field">
+            <label className="setup-label">GitHub 用户名</label>
+            <input
+              {...register("githubOwner")}
+              className="setup-input"
+              placeholder="your-github-username"
+            />
+          </div>
+          <div className="setup-field">
+            <label className="setup-label">GitHub 仓库名</label>
+            <input
+              {...register("githubRepo")}
+              className="setup-input"
+              placeholder="your-wiki-repo"
+            />
+          </div>
+        </div>
+        <div className="setup-help">
+          这两个会用在 wiki 页面顶部的 "查看源代码 / 历史" 链接里。
+          上线后再回来填。
+        </div>
+      </details>
+
+      {/* 第三步：预览 + 上线 */}
+      <div className="setup-section deploy-block" style={{ marginTop: 36 }}>
+        <h2 className="setup-section-heading">第三步 · 预览并上线</h2>
+
         <div className="setup-submit-row">
           <button
             type="button"
@@ -1019,8 +1061,6 @@ export default function SetupForm() {
                 linkedin: normalizeUrl(current.linkedin),
                 githubProfile: normalizeUrl(current.githubProfile),
               };
-              // Use blob: URLs in preview so the user sees their just-
-              // uploaded thumbnails without a round-trip.
               setPreviewData(
                 enrichShipped(normalized, projectThumbs, "preview")
               );
@@ -1028,138 +1068,57 @@ export default function SetupForm() {
             }}
             className="setup-button setup-button-secondary"
           >
-            Preview wiki
-          </button>
-          <button
-            type="submit"
-            disabled={generating}
-            className="setup-button-primary"
-          >
-            {generating
-              ? "Generating…"
-              : "Generate my wiki (download zip)"}
+            👁 预览 wiki
           </button>
         </div>
-        {done && (
-          <div className="deploy-card">
-            <div className="deploy-card-title">
-              ✓ Zip downloaded — now put your wiki on the internet
-            </div>
-            <p className="deploy-card-lede">
-              The zip is a complete Next.js project. Three short steps and
-              you have a live URL.
-            </p>
 
-            <ol className="deploy-steps">
-              <li>
-                <strong>Unzip</strong> the file you just downloaded. Open the
-                folder in your terminal.
-              </li>
-              <li>
-                <strong>Create a new GitHub repo</strong> at{" "}
-                <a
-                  href="https://github.com/new"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="deploy-card-link"
-                >
-                  github.com/new
-                </a>{" "}
-                (any name; don&apos;t initialize with a README).
-              </li>
-              <li>
-                <strong>Push the folder</strong> to that repo. Paste this in
-                your terminal (replace{" "}
-                <code>YOUR-USERNAME</code> and <code>YOUR-REPO</code>):
-                <pre className="deploy-cmd">
-{`git init
-git add .
-git commit -m "Initial setup via Yourpedia"
-git branch -M main
-git remote add origin https://github.com/YOUR-USERNAME/YOUR-REPO.git
-git push -u origin main`}
-                </pre>
-              </li>
-              <li>
-                <strong>Deploy on Vercel</strong> — click the button below,
-                sign in (free), pick the repo you just pushed, hit Deploy.
-                Vercel auto-detects Next.js. ~30 seconds.
-                <div style={{ marginTop: 10 }}>
-                  <a
-                    href="https://vercel.com/new"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="deploy-vercel-button"
-                  >
-                    Open Vercel → Deploy my repo
-                  </a>
-                </div>
-              </li>
-            </ol>
-
-            <div className="deploy-card-aside">
-              <strong>No GitHub?</strong> You can also drag the unzipped
-              folder onto{" "}
-              <a
-                href="https://vercel.com/new"
-                target="_blank"
-                rel="noreferrer"
-                className="deploy-card-link"
-              >
-                vercel.com/new
-              </a>
-              {" "}— click &quot;Browse&quot; and select the folder. No git
-              required, but you won&apos;t be able to update the wiki later
-              without re-uploading the whole folder.
-            </div>
-
-            <div className="deploy-card-aside">
-              Full step-by-step (with troubleshooting) is also in{" "}
-              <code>README.md</code> inside the zip.
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Phase 1C — GitHub one-click deploy */}
-      <div className="setup-section deploy-block">
-        <h2 className="setup-section-heading">
-          Or deploy with one click
-        </h2>
-        <p className="setup-help" style={{ marginTop: -8, marginBottom: 14 }}>
-          Sign in with GitHub and Yourpedia will fork the template,
-          commit your wiki content, and hand you a Vercel deploy
-          button. No terminal, no git commands.
+        <p className="setup-help" style={{ marginTop: 16, marginBottom: 14 }}>
+          点下面按钮，我们会自动帮你：
+          <strong>① 在你 GitHub 复制一份模板</strong> →
+          <strong>② 把你的 wiki 内容提交进去</strong> →
+          <strong>③ 给你一个 Vercel 部署按钮</strong>。
+          全程不用敲命令、不用懂代码。整个过程约 30 秒。
         </p>
 
         {sessionStatus === "loading" && (
-          <div className="setup-help">Checking your GitHub session…</div>
+          <div className="setup-help">正在检查你的 GitHub 登录状态…</div>
         )}
 
         {sessionStatus === "unauthenticated" && (
-          <button
-            type="button"
-            onClick={() => signIn("github")}
-            className="deploy-github-button"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              width="18"
-              height="18"
-              fill="currentColor"
-              aria-hidden="true"
+          <>
+            <button
+              type="button"
+              onClick={() => signIn("github")}
+              className="deploy-github-button"
             >
-              <path d="M12 .5C5.65.5.5 5.65.5 12.05c0 5.1 3.3 9.42 7.88 10.95.58.1.79-.25.79-.55v-2.07c-3.2.7-3.88-1.37-3.88-1.37-.52-1.32-1.27-1.67-1.27-1.67-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.02 1.75 2.69 1.24 3.34.95.1-.74.4-1.24.72-1.53-2.55-.29-5.23-1.27-5.23-5.66 0-1.25.45-2.27 1.18-3.07-.12-.29-.51-1.46.11-3.05 0 0 .96-.31 3.15 1.17.92-.25 1.9-.38 2.88-.38s1.96.13 2.88.38c2.19-1.48 3.15-1.17 3.15-1.17.62 1.59.23 2.76.11 3.05.74.8 1.18 1.82 1.18 3.07 0 4.4-2.69 5.36-5.25 5.65.41.36.78 1.06.78 2.13v3.16c0 .31.2.66.79.55C20.2 21.46 23.5 17.15 23.5 12.05 23.5 5.65 18.35.5 12 .5z" />
-            </svg>
-            <span>Sign in with GitHub</span>
-          </button>
+              <svg
+                viewBox="0 0 24 24"
+                width="18"
+                height="18"
+                fill="currentColor"
+                aria-hidden="true"
+              >
+                <path d="M12 .5C5.65.5.5 5.65.5 12.05c0 5.1 3.3 9.42 7.88 10.95.58.1.79-.25.79-.55v-2.07c-3.2.7-3.88-1.37-3.88-1.37-.52-1.32-1.27-1.67-1.27-1.67-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.02 1.75 2.69 1.24 3.34.95.1-.74.4-1.24.72-1.53-2.55-.29-5.23-1.27-5.23-5.66 0-1.25.45-2.27 1.18-3.07-.12-.29-.51-1.46.11-3.05 0 0 .96-.31 3.15 1.17.92-.25 1.9-.38 2.88-.38s1.96.13 2.88.38c2.19-1.48 3.15-1.17 3.15-1.17.62 1.59.23 2.76.11 3.05.74.8 1.18 1.82 1.18 3.07 0 4.4-2.69 5.36-5.25 5.65.41.36.78 1.06.78 2.13v3.16c0 .31.2.66.79.55C20.2 21.46 23.5 17.15 23.5 12.05 23.5 5.65 18.35.5 12 .5z" />
+              </svg>
+              <span>用 GitHub 账号登录并上线</span>
+            </button>
+            <div className="setup-help" style={{ marginTop: 8 }}>
+              还没有 GitHub 账号？<a
+                href="https://github.com/signup"
+                target="_blank"
+                rel="noreferrer"
+                className="deploy-card-link"
+              >点这里 30 秒注册一个 →</a>
+              （免费，邮箱验证就行）
+            </div>
+          </>
         )}
 
         {sessionStatus === "authenticated" && deployStep === "idle" && (
           <div>
             <div className="deploy-signed-in">
               <span>
-                Signed in as{" "}
+                已登录 GitHub：
                 <strong>@{session.user?.githubLogin || session.user?.name}</strong>
               </span>
               <button
@@ -1167,7 +1126,7 @@ git push -u origin main`}
                 onClick={() => signOut({ redirect: false })}
                 className="deploy-signout-link"
               >
-                sign out
+                切换账号
               </button>
             </div>
             <button
@@ -1175,7 +1134,7 @@ git push -u origin main`}
               onClick={handleDeploy}
               className="deploy-action-button"
             >
-              Deploy my wiki to GitHub + open Vercel
+              🚀 一键上线我的 wiki
             </button>
           </div>
         )}
@@ -1186,17 +1145,17 @@ git push -u origin main`}
               className={`deploy-step ${deployStep === "forking" ? "is-active" : "is-done"}`}
             >
               <span className="deploy-step-dot">1</span>
-              <span>Forking colarpedia-template into your GitHub…</span>
+              <span>正在你的 GitHub 复制模板仓库…</span>
             </div>
             <div
               className={`deploy-step ${deployStep === "committing" ? "is-active" : "is-pending"}`}
             >
               <span className="deploy-step-dot">2</span>
-              <span>Committing your wiki content…</span>
+              <span>正在把你的 wiki 内容提交进去…</span>
             </div>
             <div className="deploy-step is-pending">
               <span className="deploy-step-dot">3</span>
-              <span>Opening Vercel deploy link…</span>
+              <span>准备 Vercel 上线链接…</span>
             </div>
           </div>
         )}
@@ -1204,10 +1163,10 @@ git push -u origin main`}
         {deployStep === "done" && deployResult && (
           <div className="deploy-result">
             <div className="deploy-result-title">
-              ✓ Your wiki is on GitHub. One click to put it online.
+              ✓ 你的 wiki 已经在 GitHub 上了，再点一下就上线
             </div>
             <p className="setup-help" style={{ marginBottom: 10 }}>
-              Repo:{" "}
+              GitHub 仓库：{" "}
               <a
                 href={deployResult.forkUrl}
                 target="_blank"
@@ -1216,12 +1175,9 @@ git push -u origin main`}
               >
                 {deployResult.forkUrl.replace("https://github.com/", "")}
               </a>{" "}
-              · {deployResult.operations?.length || 0} files committed
+              · 已提交 {deployResult.operations?.length || 0} 个文件
               {deployResult.forkExisted && (
-                <em>
-                  {" "}
-                  (reusing existing fork — old commits preserved)
-                </em>
+                <em>（之前已经有这个仓库了，本次是覆盖更新）</em>
               )}
             </p>
             <a
@@ -1230,20 +1186,33 @@ git push -u origin main`}
               rel="noreferrer"
               className="deploy-vercel-button"
             >
-              Deploy on Vercel →
+              在 Vercel 上线 →
             </a>
             <div className="setup-help" style={{ marginTop: 10 }}>
-              Click the button — Vercel will detect Next.js, ask you
-              once for permission, and deploy in ~30s. After deploy,
-              update <code>site.config.js</code> in your fork to set
-              the real <code>baseUrl</code> and you&apos;re done.
+              点击上面按钮，会跳到 Vercel：登录（用 GitHub 账号一键登录就行，免费、不用信用卡），
+              然后按 "Deploy" 按钮，等大概 30 秒就上线了。
             </div>
+
+            <details className="setup-array-details" style={{ marginTop: 14 }}>
+              <summary>上线后想换成自己的域名（如 wangxue.com）？</summary>
+              <div className="setup-help" style={{ marginTop: 10 }}>
+                <ol style={{ paddingLeft: 20, lineHeight: 1.7 }}>
+                  <li>在阿里云 / 腾讯云 / Namecheap 等买一个域名（一般 ¥50-100/年）。</li>
+                  <li>进入 Vercel → 你的项目 → Settings → Domains，输入你的域名点 Add。</li>
+                  <li>Vercel 会告诉你要改 DNS 的 A 记录或 CNAME，把它复制到你买域名的网站后台。</li>
+                  <li>等 5-30 分钟生效，你的 wiki 就在 wangxue.com 上线了。</li>
+                </ol>
+                <p style={{ marginTop: 10 }}>
+                  不绑域名也可以，Vercel 会给你一个 *.vercel.app 的免费子域名，照样能用。
+                </p>
+              </div>
+            </details>
           </div>
         )}
 
         {deployStep === "error" && (
           <div className="deploy-error">
-            <strong>Deploy failed:</strong> {deployError}
+            <strong>上线失败：</strong>{deployError}
             <div style={{ marginTop: 8 }}>
               <button
                 type="button"
@@ -1253,7 +1222,7 @@ git push -u origin main`}
                 }}
                 className="setup-button"
               >
-                Try again
+                再试一次
               </button>
             </div>
           </div>
@@ -1266,18 +1235,12 @@ git push -u origin main`}
           photoPreviewUrl={photoPreviewUrl}
           files={{ photoFile, pdfFile }}
           onApplyPolish={(section, idx, patch) => {
-            // Apply each verified field to the form. shouldDirty so RHF
-            // tracks user-editable state correctly; preview re-renders
-            // automatically via watch().
             for (const [field, value] of Object.entries(patch)) {
               setValue(`${section}.${idx}.${field}`, value, {
                 shouldDirty: true,
                 shouldValidate: false,
               });
             }
-            // Re-snapshot previewData so the modal's audit re-runs with
-            // the patched form. previewData is what the modal renders;
-            // refreshing it from current form state syncs both.
             const fresh = watch();
             setPreviewData(
               enrichShipped(

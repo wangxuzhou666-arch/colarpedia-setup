@@ -1,7 +1,6 @@
 "use client";
 
 // Upload panel: PDF drop + text paste → /api/parse → setValue() the form.
-// Sits at the top of SetupForm. Optional — users can also fill manually.
 
 import { useRef, useState } from "react";
 
@@ -36,20 +35,20 @@ export default function UploadPanel({
   const [pasted, setPasted] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [info, setInfo] = useState(""); // success summary
+  const [info, setInfo] = useState("");
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef(null);
 
   const onPickFile = (f) => {
     if (!f) return;
     if (f.type && f.type !== "application/pdf" && !f.name.endsWith(".pdf")) {
-      setError("Only PDF files are accepted (got " + (f.type || "unknown") + ").");
+      setError("只支持 PDF 文件（你上传的是 " + (f.type || "未知格式") + "）");
       setFile(null);
       onPdfFileChange?.(null);
       return;
     }
     if (f.size > MAX_PDF_BYTES) {
-      setError("PDF is too large (max 5 MB).");
+      setError("PDF 太大了（最多 5 MB）");
       setFile(null);
       onPdfFileChange?.(null);
       return;
@@ -57,9 +56,6 @@ export default function UploadPanel({
     setError("");
     setFile(f);
     onPdfFileChange?.(f);
-    // Auto-clear pasted text whenever a new PDF is picked — prevents
-    // accidental double-source contamination (the LLM was mixing PDF
-    // résumé content with leftover paste text in earlier tests).
     setPasted("");
     setInfo("");
   };
@@ -69,17 +65,16 @@ export default function UploadPanel({
       const reader = new FileReader();
       reader.onload = () => {
         const result = reader.result;
-        // result is "data:application/pdf;base64,...." — strip the prefix
         const base64 = String(result).split(",", 2)[1] || "";
         resolve(base64);
       };
-      reader.onerror = () => reject(new Error("Failed to read file"));
+      reader.onerror = () => reject(new Error("文件读取失败"));
       reader.readAsDataURL(f);
     });
 
   const handleParse = async () => {
     if (!file && !pasted.trim()) {
-      setError("Upload a PDF or paste some text first.");
+      setError("先上传一份 PDF 简历，或在下面粘贴一段自我介绍文字");
       return;
     }
     setBusy(true);
@@ -100,22 +95,18 @@ export default function UploadPanel({
       });
       const json = await res.json();
       if (!res.ok) {
-        throw new Error(json.error || `Request failed (${res.status})`);
+        throw new Error(json.error || `解析请求失败（${res.status}）`);
       }
       const data = json.data || {};
 
-      // setValue every plain field
       for (const k of FORM_FIELDS) {
         if (k in data) {
           setValue(k, data[k] ?? "", { shouldValidate: false });
         }
       }
-      // homepageSlug came from LLM — mark slug as touched so the
-      // name->slug auto-derive does NOT overwrite it later.
       if (data.homepageSlug) {
         setSlugTouched(true);
       }
-      // shipped: replace whole array via useFieldArray.replace()
       if (Array.isArray(data.shipped)) {
         replaceShipped(
           data.shipped.map((s) => ({
@@ -166,16 +157,18 @@ export default function UploadPanel({
       }
 
       const meta = json.meta || {};
+      const shippedCount = Array.isArray(data.shipped) ? data.shipped.length : 0;
+      const eduCount = Array.isArray(data.educations) ? data.educations.length : 0;
+      const expCount = Array.isArray(data.experiences) ? data.experiences.length : 0;
+      const remaining = meta.rateLimitRemaining;
       setInfo(
-        `Filled from ${file ? "PDF" : "pasted text"}. ` +
-          `${meta.outputTokens || 0} tokens generated, est ` +
-          `$${meta.estCostUsd || 0}. ` +
-          (meta.rateLimitRemaining !== undefined
-            ? `${meta.rateLimitRemaining} generations left today.`
+        `识别完成：${eduCount} 段教育经历 · ${expCount} 段工作经历 · ${shippedCount} 个项目。` +
+          (remaining !== undefined
+            ? `（今天还能解析 ${remaining} 次）`
             : "")
       );
     } catch (e) {
-      setError(e.message || "Parse failed.");
+      setError(humanizeParseError(e.message));
     } finally {
       setBusy(false);
     }
@@ -183,11 +176,11 @@ export default function UploadPanel({
 
   return (
     <div className="upload-panel">
-      <h2 className="setup-section-heading">Quick start — upload your résumé</h2>
+      <h2 className="setup-section-heading">第一步 · 上传简历</h2>
       <p className="setup-help" style={{ marginTop: -8, marginBottom: 14 }}>
-        Drop a PDF or paste any text about yourself (LinkedIn About,
-        biography draft, freeform notes). Claude Haiku will fill the
-        form below in ~10 seconds. You can edit any field afterwards.
+        把简历 PDF 拖进来，或者直接粘贴一段关于你自己的文字（领英 About、
+        知乎个人简介、随手写的草稿都可以）。Claude 会在 10 秒内把表单帮你填好，
+        你再改不满意的地方。
       </p>
 
       <div
@@ -224,27 +217,27 @@ export default function UploadPanel({
           <>
             <strong>{file.name}</strong>{" "}
             <span style={{ color: "var(--wiki-text-soft)" }}>
-              ({Math.round(file.size / 1024)} KB)
+              （{Math.round(file.size / 1024)} KB）
             </span>
             <div className="setup-help" style={{ marginTop: 4 }}>
-              Click to replace, or drop a different PDF.
+              点击换一份 PDF，或拖另一个文件进来。
             </div>
           </>
         ) : (
           <>
-            <strong>Drop a PDF here</strong> or click to browse
+            <strong>把 PDF 拖到这里</strong>，或点击选择文件
             <div className="setup-help" style={{ marginTop: 4 }}>
-              Max 5 MB. Résumé / CV / bio works best.
+              最大 5 MB。简历 / CV / 个人介绍 都行。
             </div>
           </>
         )}
       </div>
 
-      <div className="upload-or">— or —</div>
+      <div className="upload-or">— 或者 —</div>
 
       <div className="setup-field">
         <label className="setup-label">
-          Paste text instead {file ? "(disabled — PDF is selected)" : "(or in addition)"}
+          直接粘贴文字 {file ? "（已选 PDF，禁用）" : "（选填）"}
         </label>
         <textarea
           value={pasted}
@@ -254,8 +247,8 @@ export default function UploadPanel({
           className="setup-textarea"
           placeholder={
             file
-              ? "PDF is the active source. Remove it (replace with another or refresh) to paste text instead."
-              : "Paste your LinkedIn About section, a bio draft, freeform notes — anything Claude can read to learn who you are."
+              ? "已经选了 PDF 作为来源。换成粘贴文字的话，先把上面的 PDF 删掉。"
+              : "粘贴你的领英 About、个人简介草稿、随手写的笔记 —— 任何能让 Claude 了解你的文字都行。"
           }
         />
       </div>
@@ -266,11 +259,29 @@ export default function UploadPanel({
         disabled={busy || (!file && !pasted.trim())}
         className="setup-button-primary"
       >
-        {busy ? "Parsing with Claude…" : "Parse and fill the form"}
+        {busy ? "Claude 正在读取…" : "解析并填好下方表单"}
       </button>
 
       {error && <div className="upload-error">⚠ {error}</div>}
       {info && <div className="upload-info">✓ {info}</div>}
     </div>
   );
+}
+
+// 把英文/技术性错误信息翻译成用户看得懂 + 知道下一步的中文提示
+function humanizeParseError(raw) {
+  const msg = String(raw || "");
+  if (/rate limit|daily limit|10 generations/i.test(msg)) {
+    return "今天免费解析次数用完了（每个网络每天 10 次）。明天再试，或者直接在下面表单手动填。";
+  }
+  if (/Model did not return structured data|tool_use/i.test(msg)) {
+    return "AI 没看明白这份 PDF（可能是扫描件 / 排版太复杂）。试试在下方粘贴文字版，或换一份 PDF。";
+  }
+  if (/PDF|pdf-parse/i.test(msg)) {
+    return "PDF 读取失败，可能是加密或扫描件。建议导出为可选中文字的 PDF 再上传，或直接在下面粘贴文字。";
+  }
+  if (/Request failed|fetch|network/i.test(msg)) {
+    return "网络请求失败，过几秒再点一次。";
+  }
+  return msg || "解析失败，再试一次。";
 }
