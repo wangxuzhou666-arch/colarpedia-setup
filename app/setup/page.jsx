@@ -59,16 +59,7 @@ export default function SetupPage() {
           <a href="/wiki/Jane_Doe/" target="_blank" rel="noreferrer">
             点这里看示例
           </a>
-          {" "}· 灵感来自 Andrej Karpathy 的{" "}
-          <a
-            href="https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f"
-            className="external"
-            target="_blank"
-            rel="noreferrer"
-          >
-            LLM Wiki
-          </a>{" "}
-          风格。
+          。
         </p>
 
         <SetupForm />

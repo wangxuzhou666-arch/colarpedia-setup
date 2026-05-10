@@ -162,7 +162,7 @@ export default function GapFillDialog({
             onClick={onClose}
             aria-label="关闭"
           >
-            ✕
+            ×
           </button>
         </div>
 
@@ -264,7 +264,7 @@ export default function GapFillDialog({
               <div className="gapfill-result">
                 {filledCount > 0 ? (
                   <div className="gapfill-result-success">
-                    ✓ 已补全 {filledCount} 项关于{" "}
+                    已补全 {filledCount} 项关于{" "}
                     <strong>{entity?.name}</strong> 的内容，表单已更新。
                   </div>
                 ) : (

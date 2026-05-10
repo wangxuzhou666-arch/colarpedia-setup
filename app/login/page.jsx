@@ -76,7 +76,7 @@ function LoginInner() {
     <LoginShell>
       {sent ? (
         <div className="upload-info" style={{ marginTop: 24, padding: 16 }}>
-          ✓ 已经给 <strong>{email}</strong> 发了一封登录邮件。
+          已经给 <strong>{email}</strong> 发了一封登录邮件。
           <br />
           打开邮箱点里面的链接就能登录（链接 1 小时内有效）。
           <div style={{ marginTop: 10, fontSize: "0.9em", color: "var(--wiki-text-soft)" }}>

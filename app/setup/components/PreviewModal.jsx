@@ -435,7 +435,7 @@ export default function PreviewModal({
               onClick={() => setShowAudit((v) => !v)}
               title={`${totalSuggestions} 条改进建议`}
             >
-              💡 {totalSuggestions} 条建议
+              {totalSuggestions} 条建议
             </button>
           )}
           <span className="preview-meta">
@@ -447,7 +447,7 @@ export default function PreviewModal({
             onClick={onClose}
             aria-label="关闭预览"
           >
-            ✕
+            ×
           </button>
         </div>
 
@@ -484,7 +484,7 @@ export default function PreviewModal({
                           : `用新的 PDF / 文字补充 ${ent.name} 的详情`
                       }
                     >
-                      📎 {ent.name || `[${t.section}[${t.idx}]]`}{" "}
+                      {ent.name || `[${t.section}[${t.idx}]]`}{" "}
                       <span className="preview-audit-polish-fields">
                         {labelSuffix}
                       </span>

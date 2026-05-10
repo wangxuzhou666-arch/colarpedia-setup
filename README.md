@@ -6,9 +6,6 @@
 一键 fork 模板仓库 + 提交内容 → Vercel 30 秒上线。
 做出来的 wiki 是双语（中文 + English），代码、内容、域名都在你自己的账号下。
 
-灵感来自 Andrej Karpathy 的
-[LLM Wiki](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f) 风格。
-
 ## 用户视角的流程
 
 1. 打开 [colarpedia-setup.vercel.app](https://colarpedia-setup.vercel.app)
@@ -73,7 +70,7 @@ npm run dev
 
 - 每次解析：约 $0.005（Haiku 4.5，5K 输入 + 3K 输出 token）
 - 默认限流：每个 IP 每天 10 次（`RATE_LIMIT_PER_DAY` 可配置）
-- ⚠️ 当前限流是 in-memory per-process，Vercel serverless 冷启动会重置——
+- 注意：当前限流是 in-memory per-process，Vercel serverless 冷启动会重置——
   正式上线建议换成 Upstash Redis
 - 成本告警：`COST_ALERT_USD`（默认 20）
 

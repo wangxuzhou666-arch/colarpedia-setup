@@ -699,7 +699,6 @@ export default function SetupForm() {
                     className="project-thumb-preview project-thumb-pdf"
                     title={thumb.fileName}
                   >
-                    <span className="project-thumb-pdf-icon">📄</span>
                     <span className="project-thumb-pdf-name">
                       {thumb.fileName.length > 22
                         ? thumb.fileName.slice(0, 19) + "…"
@@ -1138,7 +1137,7 @@ export default function SetupForm() {
             }}
             className="setup-button setup-button-secondary"
           >
-            👁 预览 wiki
+            预览 wiki
           </button>
         </div>
 
@@ -1159,7 +1158,7 @@ export default function SetupForm() {
               className="deploy-action-button"
               style={{ display: "inline-block", textDecoration: "none" }}
             >
-              ✨ 登录后一键上线我的网站
+              登录后一键上线我的网站
             </a>
             <div className="setup-help" style={{ marginTop: 8 }}>
               用邮箱登录就行（不需要密码）。我们给你发一封登录链接邮件，点链接回来就能上线。
@@ -1186,7 +1185,7 @@ export default function SetupForm() {
               onClick={handlePublish}
               className="deploy-action-button"
             >
-              ✨ 一键上线我的网站
+              一键上线我的网站
             </button>
           </div>
         )}
@@ -1203,7 +1202,7 @@ export default function SetupForm() {
         {publishStep === "done" && publishResult && (
           <div className="deploy-result">
             <div className="deploy-result-title">
-              ✓ 你的网站已经上线了！
+              你的网站已经上线了
             </div>
             <p className="setup-help" style={{ marginBottom: 10 }}>
               链接：{" "}
@@ -1230,7 +1229,7 @@ export default function SetupForm() {
                 rel="noreferrer"
                 className="deploy-vercel-button"
               >
-                🌐 打开我的网站 →
+                打开我的网站 →
               </a>
               <button
                 type="button"
@@ -1242,7 +1241,7 @@ export default function SetupForm() {
                 }}
                 className="setup-button"
               >
-                📋 复制链接
+                复制链接
               </button>
             </div>
             <div className="setup-help" style={{ marginTop: 12 }}>
@@ -1352,7 +1351,7 @@ export default function SetupForm() {
               onClick={handleDeploy}
               className="deploy-action-button"
             >
-              🚀 部署到我的 GitHub + Vercel
+              部署到我的 GitHub + Vercel
             </button>
           </div>
         )}
@@ -1381,7 +1380,7 @@ export default function SetupForm() {
         {deployStep === "done" && deployResult && (
           <div className="deploy-result">
             <div className="deploy-result-title">
-              ✓ 你的 wiki 已经在 GitHub 上了，再点一下就上线
+              你的 wiki 已经在 GitHub 上了，再点一下就上线
             </div>
             <p className="setup-help" style={{ marginBottom: 10 }}>
               GitHub 仓库：{" "}

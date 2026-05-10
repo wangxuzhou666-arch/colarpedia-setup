@@ -262,8 +262,8 @@ export default function UploadPanel({
         {busy ? "Claude 正在读取…" : "解析并填好下方表单"}
       </button>
 
-      {error && <div className="upload-error">⚠ {error}</div>}
-      {info && <div className="upload-info">✓ {info}</div>}
+      {error && <div className="upload-error">{error}</div>}
+      {info && <div className="upload-info">{info}</div>}
     </div>
   );
 }

@@ -186,7 +186,7 @@ export function wikiPageTemplate(data, { photoPath, lang = "en" } = {}) {
         ? `<img src="${s.thumbnailPath}" alt="" style="${thumbStyle}" /> `
         : "";
       const suffix = isPdf
-        ? ` ([📄 ${isZh ? "PDF 文件" : "PDF"}](${s.thumbnailPath}))`
+        ? ` ([${isZh ? "PDF 文件" : "PDF"}](${s.thumbnailPath}))`
         : "";
 
       const displayName = isZh && s.name_zh ? s.name_zh : s.name;
@@ -696,11 +696,10 @@ ${deployBody}
 
 ## Maintain it
 
-Open the repo in Claude Code (or any AI coding tool). The schema in \`CLAUDE.md\` (at the repo root) tells Claude how to maintain the wiki — add pages, cross-link them, keep tone consistent.
+Open the repo in any AI coding tool. The schema in \`CLAUDE.md\` (at the repo root) describes how to maintain the wiki — add pages, cross-link them, keep tone consistent.
 
 ## Credit
 
-- Pattern: Andrej Karpathy, _LLM Wiki_ (2026).
 - Visual system: Wikipedia (Wikimedia Foundation).
 - Generator: Yourpedia — open source at
   <https://github.com/wangxuzhou666-arch/colarpedia-template>.

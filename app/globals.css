@@ -648,7 +648,6 @@ ol.references li { margin-bottom: 4px; }
   color: var(--wiki-text);
 }
 .setup-success::before {
-  content: "✓ ";
   color: var(--wiki-text-soft);
   font-weight: 700;
 }
@@ -1497,11 +1496,6 @@ a.wikilink-live:hover {
   color: #ffffff;
   border-color: #166534;
 }
-.deploy-step.is-done .deploy-step-dot::before {
-  content: "✓";
-}
-.deploy-step.is-done .deploy-step-dot { font-size: 0; }
-.deploy-step.is-done .deploy-step-dot::before { font-size: 13px; }
 .deploy-step-dot {
   width: 22px;
   height: 22px;
