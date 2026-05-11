@@ -615,7 +615,7 @@ ol.references li { margin-bottom: 4px; }
 }
 .setup-button-primary:disabled {
   color: var(--wiki-text-soft);
-  cursor: wait;
+  cursor: not-allowed;
   background: var(--wiki-bg-alt);
 }
 
@@ -705,6 +705,40 @@ ol.references li { margin-bottom: 4px; }
   margin: 12px 0 8px;
   letter-spacing: 0.05em;
   text-transform: uppercase;
+}
+
+/* Paste fallback：默认折叠，移动端 / PDF 失败的次路径。
+   样式上 deliberately 降级——summary 像 secondary link，不抢 PDF 主路径焦点。 */
+.upload-fallback {
+  margin: 14px 0 4px;
+  font-family: var(--font-sans);
+}
+.upload-fallback > summary {
+  cursor: pointer;
+  color: var(--wiki-text-soft);
+  font-size: 13px;
+  padding: 6px 0;
+  list-style: none;
+  user-select: none;
+}
+.upload-fallback > summary::-webkit-details-marker {
+  display: none;
+}
+.upload-fallback > summary::before {
+  content: "▸ ";
+  display: inline-block;
+  width: 12px;
+  font-size: 10px;
+  transition: transform 0.15s ease;
+}
+.upload-fallback[open] > summary::before {
+  content: "▾ ";
+}
+.upload-fallback > summary:hover {
+  color: var(--wiki-link);
+}
+.upload-fallback > textarea {
+  margin-top: 8px;
 }
 
 .upload-error {
@@ -1042,6 +1076,76 @@ ol.references li { margin-bottom: 4px; }
 .preview-audit-polish-fields {
   color: var(--wiki-text-soft);
   font-size: 11px;
+}
+
+/* New: entity-row with both "✏️ 编辑" and "📎 PDF 补充" actions
+   (replaces the legacy single-button-per-entity layout). */
+.preview-audit-polish-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px 3px 10px;
+  background: var(--wiki-bg);
+  border: 1px solid var(--wiki-border);
+  border-radius: 4px;
+  font-family: var(--font-sans);
+  font-size: 12px;
+}
+.preview-audit-polish-group.is-gap {
+  border-color: #d4ad00;
+  background: #fffce4;
+}
+.preview-audit-polish-label {
+  color: var(--wiki-text);
+  margin-right: 4px;
+  white-space: nowrap;
+}
+.preview-audit-action-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  padding: 2px 8px;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  color: var(--wiki-link);
+  cursor: pointer;
+  transition: background 80ms;
+}
+.preview-audit-action-btn:hover {
+  background: var(--wiki-link-hover-bg);
+}
+.preview-audit-action-btn.is-secondary {
+  color: var(--wiki-text-soft);
+}
+.preview-audit-action-btn.is-secondary:hover {
+  color: var(--wiki-link);
+}
+
+/* ===== EntityInlineEditor (manual edit dialog from preview's audit drawer) =====
+   Reuses .gapfill-overlay / .gapfill-modal / .gapfill-header / .gapfill-close,
+   but the body is a single column form (not the two-column grid GapFill uses). */
+.entity-editor-body {
+  padding: 16px 20px 12px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+.entity-editor-body .setup-bilingual-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+@media (max-width: 720px) {
+  .entity-editor-body .setup-bilingual-grid { grid-template-columns: 1fr; }
+}
+.entity-editor-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 20px;
+  border-top: 1px solid var(--wiki-border-light);
+  background: var(--wiki-bg-alt);
 }
 
 /* ===== GapFillDialog ===== */

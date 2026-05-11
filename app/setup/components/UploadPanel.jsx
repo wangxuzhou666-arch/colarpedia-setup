@@ -1,6 +1,8 @@
 "use client";
 
-// Upload panel: PDF drop + text paste → /api/parse → setValue() the form.
+// Upload panel: PDF drop (主路径) + paste fallback (折叠) → /api/parse → setValue() the form.
+// Paste fallback 默认折叠：3-agent review 一致认为移动端用户的简历 PDF 通常在电脑上，
+// 完全删 paste 会把 xhs 引流过来的手机端用户卡死（卡死率估 60%+）。
 
 import { useRef, useState } from "react";
 
@@ -35,6 +37,7 @@ export default function UploadPanel({
   const [pasted, setPasted] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [showLoginCTA, setShowLoginCTA] = useState(false);
   const [info, setInfo] = useState("");
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef(null);
@@ -74,18 +77,18 @@ export default function UploadPanel({
 
   const handleParse = async () => {
     if (!file && !pasted.trim()) {
-      setError("先上传一份 PDF 简历，或在下面粘贴一段自我介绍文字");
+      setError("先上传一份 PDF 简历，或展开下方「没 PDF？」粘贴一段文字");
       return;
     }
     setBusy(true);
     setError("");
+    setShowLoginCTA(false);
     setInfo("");
     try {
       const body = {};
       if (file) {
         body.pdfBase64 = await fileToBase64(file);
-      }
-      if (pasted.trim()) {
+      } else if (pasted.trim()) {
         body.text = pasted.trim();
       }
       const res = await fetch("/api/parse", {
@@ -95,6 +98,10 @@ export default function UploadPanel({
       });
       const json = await res.json();
       if (!res.ok) {
+        // 429 + requireAuth = 匿名超额 → 让用户看到登录解锁 CTA
+        if (res.status === 429 && json.requireAuth) {
+          setShowLoginCTA(true);
+        }
         throw new Error(json.error || `解析请求失败（${res.status}）`);
       }
       const data = json.data || {};
@@ -178,9 +185,7 @@ export default function UploadPanel({
     <div className="upload-panel">
       <h2 className="setup-section-heading">第一步 · 上传简历</h2>
       <p className="setup-help" style={{ marginTop: -8, marginBottom: 14 }}>
-        把简历 PDF 拖进来，或者直接粘贴一段关于你自己的文字（领英 About、
-        知乎个人简介、随手写的草稿都可以）。10 秒内自动帮你填好下面的表单，
-        你再改不满意的地方。
+        把简历 PDF 拖进来。10 秒内自动帮你填好下面的表单，你再改不满意的地方。
       </p>
 
       <div
@@ -233,12 +238,8 @@ export default function UploadPanel({
         )}
       </div>
 
-      <div className="upload-or">— 或者 —</div>
-
-      <div className="setup-field">
-        <label className="setup-label">
-          直接粘贴文字 {file ? "（已选 PDF，禁用）" : "（选填）"}
-        </label>
+      <details className="upload-fallback">
+        <summary>没 PDF？或者 PDF 解析失败？粘贴一段文字试试</summary>
         <textarea
           value={pasted}
           onChange={(e) => setPasted(e.target.value)}
@@ -251,7 +252,7 @@ export default function UploadPanel({
               : "粘贴你的领英 About、个人简介草稿、随手写的笔记 —— 任何能描述你的文字都行。"
           }
         />
-      </div>
+      </details>
 
       <button
         type="button"
@@ -262,7 +263,27 @@ export default function UploadPanel({
         {busy ? "正在读取…" : "解析并填好下方表单"}
       </button>
 
-      {error && <div className="upload-error">{error}</div>}
+      {error && (
+        <div className="upload-error">
+          {error}
+          {showLoginCTA && (
+            <a
+              href="/login"
+              className="setup-button-primary"
+              style={{
+                display: "inline-block",
+                marginLeft: 10,
+                marginTop: 4,
+                padding: "4px 14px",
+                fontSize: 13,
+                textDecoration: "none",
+              }}
+            >
+              去登录解锁 →
+            </a>
+          )}
+        </div>
+      )}
       {info && <div className="upload-info">{info}</div>}
     </div>
   );
@@ -275,10 +296,10 @@ function humanizeParseError(raw) {
     return "今天免费解析次数用完了（每个网络每天 10 次）。明天再试，或者直接在下面表单手动填。";
   }
   if (/Model did not return structured data|tool_use/i.test(msg)) {
-    return "没看明白这份 PDF（可能是扫描件 / 排版太复杂）。试试在下方粘贴文字版，或换一份 PDF。";
+    return "没看明白这份 PDF（可能是扫描件 / 排版太复杂）。展开下方「没 PDF？」粘贴文字版试试，或换一份 PDF。";
   }
   if (/PDF|pdf-parse/i.test(msg)) {
-    return "PDF 读取失败，可能是加密或扫描件。建议导出为可选中文字的 PDF 再上传，或直接在下面粘贴文字。";
+    return "PDF 读取失败，可能是加密或扫描件。导出为可选中文字的 PDF 再上传，或展开下方「没 PDF？」直接粘贴文字。";
   }
   if (/Request failed|fetch|network/i.test(msg)) {
     return "网络请求失败，过几秒再点一次。";

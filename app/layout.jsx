@@ -1,5 +1,4 @@
 import "./globals.css";
-import { Providers } from "./providers";
 
 export const metadata = {
   title: "Yourpedia — set up your wiki in 5 minutes",
@@ -19,9 +18,7 @@ export default function RootLayout({ children }) {
       <head>
         <meta name="color-scheme" content="light only" />
       </head>
-      <body>
-        <Providers>{children}</Providers>
-      </body>
+      <body>{children}</body>
     </html>
   );
 }

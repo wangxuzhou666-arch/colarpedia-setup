@@ -12,40 +12,11 @@ import {
   WIKI_DATA_TOOL,
   buildUserMessage,
 } from "../../setup/lib/llm-config";
+import { checkRateLimit } from "../../../lib/ratelimit";
+import { getSupabaseServerClient } from "../../../lib/supabase/server";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
-
-// In-memory rate limit. Per-process — ephemeral on Vercel serverless,
-// good enough for MVP. Replace with Upstash/Redis when traffic grows.
-const ipHits = new Map(); // ip -> { count, day }
-
-function clientIp(req) {
-  return (
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    req.headers.get("x-real-ip") ||
-    "unknown"
-  );
-}
-
-function checkRateLimit(ip) {
-  const limit = parseInt(process.env.RATE_LIMIT_PER_DAY || "10", 10);
-  if (limit <= 0) return { ok: true };
-  const today = new Date().toISOString().slice(0, 10);
-  const cur = ipHits.get(ip);
-  if (!cur || cur.day !== today) {
-    ipHits.set(ip, { count: 1, day: today });
-    return { ok: true, remaining: limit - 1 };
-  }
-  if (cur.count >= limit) {
-    return {
-      ok: false,
-      reason: `今天的免费解析次数用完了（每个网络 ${limit} 次/天）。明早重置——也可以先在下面手动填表单跳过 AI 解析这一步。`,
-    };
-  }
-  cur.count += 1;
-  return { ok: true, remaining: limit - cur.count };
-}
 
 async function extractPdfText(base64) {
   // pdf-parse is server-only; dynamic import keeps it out of any client bundle.
@@ -69,10 +40,25 @@ export async function POST(req) {
     );
   }
 
-  const ip = clientIp(req);
-  const rate = checkRateLimit(ip);
+  // Identify user (Supabase session if logged in, else anonymous).
+  // 已登录用户 quota 10/day，匿名 3/day 且超额 requireAuth=true 触发前端登录墙。
+  let userId = null;
+  try {
+    const supabase = await getSupabaseServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    userId = user?.id || null;
+  } catch {
+    // Supabase 不可达不阻断流程，按匿名走
+  }
+  const rate = await checkRateLimit(req, userId);
   if (!rate.ok) {
-    return Response.json({ error: rate.reason }, { status: 429 });
+    const reason = rate.requireAuth
+      ? `免登录用户今日解析额度已用完（${rate.limit ?? 3} 次/天）。登录后可解锁 10 次/天 — 点上方「登录后一键上线我的网站」也可以登录。`
+      : `今日解析额度已用完（${rate.limit ?? 10} 次/天）。明早重置，可以先手动填表单跳过 AI 解析。`;
+    return Response.json(
+      { error: reason, requireAuth: !!rate.requireAuth, remaining: 0, resetAt: rate.reset },
+      { status: 429, headers: rate.reset ? { "Retry-After": String(Math.max(1, Math.ceil((rate.reset - Date.now()) / 1000))) } : {} }
+    );
   }
 
   let body;

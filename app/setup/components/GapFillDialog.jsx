@@ -66,6 +66,7 @@ export default function GapFillDialog({
   const [pasted, setPasted] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [showLoginCTA, setShowLoginCTA] = useState(false);
   const [result, setResult] = useState(null); // {patch, evidence, unfilled, rejected, meta}
   const fileInputRef = useRef(null);
 
@@ -116,6 +117,9 @@ export default function GapFillDialog({
       });
       const json = await res.json();
       if (!res.ok) {
+        if (res.status === 429 && json.requireAuth) {
+          setShowLoginCTA(true);
+        }
         throw new Error(json.error || `请求失败（${res.status}）`);
       }
       setResult(json);
@@ -247,7 +251,26 @@ export default function GapFillDialog({
               style={{ marginTop: 10 }}
             />
 
-            {error && <div className="setup-error">{error}</div>}
+            {error && (
+              <div className="setup-error">
+                {error}
+                {showLoginCTA && (
+                  <a
+                    href="/login"
+                    className="setup-button-primary"
+                    style={{
+                      display: "inline-block",
+                      marginLeft: 10,
+                      padding: "4px 14px",
+                      fontSize: 13,
+                      textDecoration: "none",
+                    }}
+                  >
+                    去登录解锁 →
+                  </a>
+                )}
+              </div>
+            )}
 
             <div style={{ marginTop: 12 }}>
               <button

@@ -22,47 +22,15 @@ import {
   POLISH_ENTITY_TOOL,
   buildPolishUserMessage,
 } from "../../setup/lib/llm-config";
+import { checkRateLimit } from "../../../lib/ratelimit";
+import { getSupabaseServerClient } from "../../../lib/supabase/server";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
 
-// Per-IP daily budget shared across /api/parse + /api/polish-entity.
-// parse counts as 1 unit, polish as 0.2 units. Default 10 units/day
-// allows roughly: 1 parse + 45 polishes, OR 10 parses + 0 polishes.
-//
-// Per-process Map = ephemeral on serverless. Replace with Upstash when
-// traffic grows. NOTE: this map is NOT shared with /api/parse since
-// each route file gets its own module instance — for shared budget
-// across both routes we'd need a shared store. MVP: separate budgets,
-// polish gets its own 30/day cap.
-const ipHits = new Map();
-
-function clientIp(req) {
-  return (
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    req.headers.get("x-real-ip") ||
-    "unknown"
-  );
-}
-
-function checkRateLimit(ip) {
-  const limit = parseInt(process.env.POLISH_RATE_LIMIT_PER_DAY || "30", 10);
-  if (limit <= 0) return { ok: true };
-  const today = new Date().toISOString().slice(0, 10);
-  const cur = ipHits.get(ip);
-  if (!cur || cur.day !== today) {
-    ipHits.set(ip, { count: 1, day: today });
-    return { ok: true, remaining: limit - 1 };
-  }
-  if (cur.count >= limit) {
-    return {
-      ok: false,
-      reason: `Daily polish limit of ${limit} reached for this IP. Try again tomorrow or edit the field manually.`,
-    };
-  }
-  cur.count += 1;
-  return { ok: true, remaining: limit - cur.count };
-}
+// Rate limit shared with /api/parse — anon 3/day, auth 10/day. Polish 不
+// 单独算配额（vs 旧 30/day 独立）—— 简化为单一配额池，prevent abuse vector
+// where attacker hits /polish-entity to bypass /parse limit.
 
 async function extractPdfText(base64) {
   const pdfParse = (await import("pdf-parse")).default;
@@ -120,10 +88,23 @@ export async function POST(req) {
     );
   }
 
-  const ip = clientIp(req);
-  const rate = checkRateLimit(ip);
+  // 共用配额池（anon 3/day, auth 10/day）— 跟 /api/parse 同一个，防止
+  // 攻击者用 /polish-entity 绕过 /parse 限制。
+  let userId = null;
+  try {
+    const supabase = await getSupabaseServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    userId = user?.id || null;
+  } catch {}
+  const rate = await checkRateLimit(req, userId);
   if (!rate.ok) {
-    return Response.json({ error: rate.reason }, { status: 429 });
+    const reason = rate.requireAuth
+      ? `免登录用户今日 AI 额度已用完（${rate.limit ?? 3} 次/天）。登录后可解锁 10 次/天。`
+      : `今日 AI 额度已用完（${rate.limit ?? 10} 次/天）。明早重置，可以手动编辑该字段。`;
+    return Response.json(
+      { error: reason, requireAuth: !!rate.requireAuth, remaining: 0, resetAt: rate.reset },
+      { status: 429, headers: rate.reset ? { "Retry-After": String(Math.max(1, Math.ceil((rate.reset - Date.now()) / 1000))) } : {} }
+    );
   }
 
   let body;
