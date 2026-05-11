@@ -493,7 +493,7 @@ export default function SetupForm() {
         第二步 · 核对并编辑信息
       </h2>
       <p className="setup-help" style={{ marginTop: -8, marginBottom: 14 }}>
-        Claude 已经把识别到的内容填到下面表单里，看一眼有没有错漏。
+        AI 已经把识别到的内容填到下面表单里，看一眼有没有错漏。
         所有英文版字段都是<strong>选填</strong>——只填中文也能上线。
       </p>
 

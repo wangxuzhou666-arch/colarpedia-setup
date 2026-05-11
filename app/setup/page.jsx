@@ -51,7 +51,7 @@ export default function SetupPage() {
         <p className="setup-intro">
           下面填一份表单，我们会帮你生成一个像维基百科一样的个人主页，
           可以放进 LinkedIn、小红书简介、求职简历里。
-          简历内容会发送给 Anthropic Claude 做解析，不在我们这边长期保存。
+          简历内容会发送给 AI 做解析，不在我们这边长期保存。
         </p>
 
         <p className="setup-meta">

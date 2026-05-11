@@ -19,16 +19,16 @@
 ## 技术栈
 
 - **Next.js 15** App Router (混合 SSR + 静态)
-- **Anthropic Claude Haiku 4.5**——简历解析（tool-use 结构化输出）
+- **大模型 API**——简历解析（tool-use 结构化输出）
 - **NextAuth v5 + GitHub OAuth**——一键 fork + commit 到用户仓库
+- **Supabase**——hosted publishing + magic link auth + storage
 - **@octokit/rest**——GitHub API 调用
 - **pdf-parse**——服务端 PDF 文本提取
 - **react-hook-form + zod**——表单和校验
 
 ## 隐私
 
-- 简历内容会发送到 Anthropic Claude API 做解析（这一步必须走第三方 LLM）
-- Anthropic 的数据保留政策见 [anthropic.com/legal/privacy](https://www.anthropic.com/legal/privacy)
+- 简历内容会发送到第三方 AI 服务做解析（这一步必须走 LLM）
 - 我们这边**不存储**简历内容、不写日志、不 fingerprint
 - GitHub OAuth 申请的是 `public_repo` 权限——这个权限范围比工具实际需要的大
   （我们只往 `colarpedia-template` 的 fork 里写，但 GitHub 给的 token 理论上能写你任何 public repo）。
@@ -37,17 +37,11 @@
 ## 本地开发
 
 ```bash
-# 1. 申请 Anthropic API key
-#    https://console.anthropic.com/settings/keys
-#    免费额度：$5，约 1000 次 Haiku 4.5 解析
+# 1. 申请大模型 API key（见 .env.example 注释里的 provider 链接）
 
 # 2. 配置环境变量
 cp .env.example .env.local
-# 编辑 .env.local：
-#   ANTHROPIC_API_KEY=sk-ant-...
-#   AUTH_SECRET=$(openssl rand -base64 32)
-#   GITHUB_CLIENT_ID=...        # https://github.com/settings/developers
-#   GITHUB_CLIENT_SECRET=...
+# 编辑 .env.local（具体字段见 .env.example）
 
 # 3. 安装 + 运行
 npm install
@@ -61,14 +55,17 @@ npm run dev
 |---|---|---|
 | `/` | 静态 | 跳转到 `/setup/` |
 | `/setup` | 静态 + 客户端 | 表单、PDF 上传、预览 |
-| `/api/parse` | 服务端 | Claude API 调用（API key 不出现在浏览器） |
+| `/api/parse` | 服务端 | LLM 调用（API key 不出现在浏览器） |
 | `/api/polish-entity` | 服务端 | 单条经历的 gap-fill 补充 |
-| `/api/deploy` | 服务端 | GitHub fork + commit 用户仓库 |
+| `/api/publish` | 服务端 | Supabase hosted 路径（写 sites 表 + 上传头像） |
+| `/api/deploy` | 服务端 | GitHub fork + commit 用户仓库（进阶路径） |
 | `/api/auth/*` | 服务端 | NextAuth GitHub OAuth |
+| `/auth/callback` | 服务端 | Supabase magic link 回调 |
+| `/[siteSlug]` + `/[siteSlug]/[entitySlug]` | 服务端 ISR | 多租户 wiki 渲染 |
 
 ## 成本与限流
 
-- 每次解析：约 $0.005（Haiku 4.5，5K 输入 + 3K 输出 token）
+- 每次解析：约 $0.005（5K 输入 + 3K 输出 token）
 - 默认限流：每个 IP 每天 10 次（`RATE_LIMIT_PER_DAY` 可配置）
 - 注意：当前限流是 in-memory per-process，Vercel serverless 冷启动会重置——
   正式上线建议换成 Upstash Redis

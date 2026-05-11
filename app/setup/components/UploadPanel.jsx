@@ -179,7 +179,7 @@ export default function UploadPanel({
       <h2 className="setup-section-heading">第一步 · 上传简历</h2>
       <p className="setup-help" style={{ marginTop: -8, marginBottom: 14 }}>
         把简历 PDF 拖进来，或者直接粘贴一段关于你自己的文字（领英 About、
-        知乎个人简介、随手写的草稿都可以）。Claude 会在 10 秒内把表单帮你填好，
+        知乎个人简介、随手写的草稿都可以）。AI 会在 10 秒内把表单帮你填好，
         你再改不满意的地方。
       </p>
 
@@ -248,7 +248,7 @@ export default function UploadPanel({
           placeholder={
             file
               ? "已经选了 PDF 作为来源。换成粘贴文字的话，先把上面的 PDF 删掉。"
-              : "粘贴你的领英 About、个人简介草稿、随手写的笔记 —— 任何能让 Claude 了解你的文字都行。"
+              : "粘贴你的领英 About、个人简介草稿、随手写的笔记 —— 任何能让 AI 了解你的文字都行。"
           }
         />
       </div>
@@ -259,7 +259,7 @@ export default function UploadPanel({
         disabled={busy || (!file && !pasted.trim())}
         className="setup-button-primary"
       >
-        {busy ? "Claude 正在读取…" : "解析并填好下方表单"}
+        {busy ? "AI 正在读取…" : "解析并填好下方表单"}
       </button>
 
       {error && <div className="upload-error">{error}</div>}
