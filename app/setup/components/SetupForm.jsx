@@ -1137,7 +1137,7 @@ export default function SetupForm() {
             }}
             className="setup-button setup-button-secondary"
           >
-            预览 wiki
+            预览 & 修改 wiki
           </button>
         </div>
 

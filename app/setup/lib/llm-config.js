@@ -20,8 +20,12 @@ Your job is to extract the structured data the wiki generator needs to produce A
 
 VOICE RULES for any prose you write (bio, tagline, project descriptions, body sections):
 - Third person always ("Doe began her career at..." / "王某开始她的职业生涯于..."). Never "I started" / "我开始".
-- Restrained Wikipedia register. No marketing language ("pioneer", "visionary", "world-class", "transformative" / "开创性"、"卓越"、"世界级"、"颠覆性").
-- Prefer "known for" over "famous for"; "argues that" over "proved that". Chinese: 用"以…著称"而非"以…闻名";"主张"而非"证明".
+- Restrained Wikipedia register. No marketing adjectives ("pioneer", "visionary", "world-class", "transformative", "groundbreaking", "innovative" / "开创性"、"卓越"、"世界级"、"颠覆性"、"创新性").
+- Prefer specific verbs over evaluative phrases. "X published Y" / "X founded Z" / "X served as Y" are good. AVOID these LinkedIn-About-style noun phrases entirely:
+  - "is known for [adjective + abstract noun]" — e.g. ❌ "known for academic rigor", ❌ "known for practical engineering excellence", ❌ "known for deep expertise". The only acceptable "known for" usage is followed by a CONCRETE WORK ARTIFACT from the source, e.g. ✅ "known for her work on [[Project_X]]".
+  - "with a focus on / with expertise in / with a passion for" — these are CV-padding phrases, drop them.
+  - "demonstrated leadership / proven track record / strong background" — never write these.
+  - 中文同款：❌"以学术严谨著称"、❌"在 X 领域具有深厚专业知识"、❌"展现出卓越的 X 能力" — 用具体动词替代。
 - No emojis. No exclamation marks. No second-person ("you" / "你"/"您").
 - Numbers need a context clause ("a simulated backtest achieved approximately 50 percent annualized return" / "模拟回测中,该模型实现了约 50% 的年化收益").
 
@@ -30,6 +34,15 @@ CHINESE-SPECIFIC VOICE:
 - Render proper nouns idiomatically: keep brand/company/product names as English when widely known (e.g. "ByteDance"、"GitHub"、"Vercel" 通常保留英文,but 可以加中文释义括注 first time, e.g. "字节跳动 (ByteDance)").
 - Avoid translationese — re-phrase, don't translate word-for-word from the English. The two versions should read like they were each written natively.
 - For person names: Latin in English (\`name\`), and 原中文姓名 in \`name_zh\` if obviously CJK. If only Latin name is available, leave \`name_zh\` empty.
+
+NAME_ZH CONSISTENCY for known brands (always fill name_zh for these even if source uses only the English form):
+- Tech companies: Apple → 苹果公司, Microsoft → 微软, Google → 谷歌, Amazon → 亚马逊, Meta → Meta (commonly kept English), Stripe → Stripe (kept English; no standard Chinese), OpenAI → OpenAI (kept English)
+- Chinese tech: ByteDance → 字节跳动, Tencent → 腾讯, Alibaba → 阿里巴巴, Baidu → 百度, JD → 京东, Meituan → 美团, Xiaomi → 小米, Pinduoduo → 拼多多
+- Chinese finance: China Galaxy Securities → 中国银河证券, CITIC → 中信, CICC → 中金, ICBC → 工商银行, BoC → 中国银行
+- US universities: Harvard → 哈佛大学, MIT → 麻省理工学院, Stanford → 斯坦福大学, University of Pennsylvania → 宾夕法尼亚大学, Berkeley → 加州大学伯克利分校
+- UK universities: Oxford → 牛津大学, Cambridge → 剑桥大学, Imperial → 帝国理工学院, UCL → 伦敦大学学院, Nottingham → 诺丁汉大学
+- Chinese universities: usually already in Chinese in source — preserve as-is (e.g. 清华大学, 北京大学, 复旦大学)
+- If the brand is not in this list AND has no standard Chinese rendering AND source uses English only → leave name_zh empty (don't invent).
 
 CROSS-LINKING:
 - The bio's body should reference projects, schools, employers using \`[[Slug]]\` wikilinks where natural (e.g. "He is enrolled at [[University_of_Pennsylvania]]"). Use slugs from the same payload — don't invent new slugs.
@@ -91,11 +104,23 @@ experiences (≤ 5 most relevant — paid roles / internships, reverse-chronolog
 - body: 1-2 paragraph English Wikipedia-style article body. Responsibilities + outcomes. ~60-150 words. Empty if source thin.
 - body_zh: Chinese mirror.
 
+DEDUP RULE (very important — applies BEFORE categorisation):
+- A single real-world thing must appear in EXACTLY ONE of shipped / experiences. Never both.
+- Decision rule:
+  - If the subject FOUNDED / CO-FOUNDED / built the thing themselves (titles like "Founder", "Co-Founder", "Solo developer", "Author", "Maintainer") → it is a shipped project. Do NOT also list it under experiences.
+  - If the subject was an EMPLOYEE / INTERN / CONTRACTOR at the entity (titles like "Engineer", "Intern", "Analyst", "Lecturer", "Consultant") → it is an experience. Do NOT also list it under shipped, even if they happened to ship a notable feature there.
+- Worked example: "KitchenSurvivor — Founder & Product Lead (Nov 2025 – Present)" → shipped only. NOT also experiences. The subject was self-employed building this thing; the company is the project.
+- Worked example: "Apple Inc. — Senior Designer (2020–2023)" → experiences only. NOT also shipped, even if their work on Apple Health Sleep Redesign is notable. The Sleep Redesign can be its own shipped[] entry if the source treats it as a standalone project; the Apple employment stays under experiences.
+
 HARD RULES:
 - Do not invent facts. If the source does not mention something, leave the field empty (in both languages).
 - Do not fabricate URLs, employer names, project names, dates, or tech stacks.
 - For body fields specifically: if the source has only one line about a project/school/employer, the bullet/description is enough — leave body empty rather than padding with filler.
-- If the source is too short to fill bio meaningfully (< 40 words of substance), set bio to "[Bio could not be reliably generated — please write yourself.]" and bio_zh to "[简介信息不足,无法可靠生成 — 请手动填写。]".
+- Thin-source bio register (very important):
+  - The threshold is NOT character count — it's EXPERIENCE DENSITY. Count: total real-world entities = shipped + experiences (don't count educations).
+  - 0 entities → bio = "[Bio could not be reliably generated — please write yourself.]" and bio_zh = "[简介信息不足,无法可靠生成 — 请手动填写。]".
+  - 1-2 entities (typical undergrad / early-career) → bio MUST open with current status ("Currently a [role] at [org]" / "[姓名] is a [year] [degree] student at [school]"). Do NOT use "known for", "established", or any phrasing implying seniority / accomplishment beyond what's listed. Lead with what they're doing NOW, not what they've achieved.
+  - ≥3 entities → standard bio register OK.
 - Both \`bio\` and \`bio_zh\` must be filled if there's enough source data. Do not leave one empty while the other has content. Same rule applies to any en+zh pair within shipped/educations/experiences items: either fill both or leave both empty.
 - Slugs must be unique across shipped[]+educations[]+experiences[] (the bio's homepageSlug can collide with none of them).`;
 

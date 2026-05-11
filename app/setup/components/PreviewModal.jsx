@@ -25,6 +25,7 @@ import {
   institutionPageTemplate,
 } from "../lib/templates";
 import GapFillDialog from "./GapFillDialog";
+import EntityInlineEditor from "./EntityInlineEditor";
 
 // Build the polish-target list for the audit panel's Quick row.
 // Every named entity surfaces here — even if the auditor didn't flag
@@ -125,6 +126,7 @@ export default function PreviewModal({
   const [showAudit, setShowAudit] = useState(true);
   const [currentSlug, setCurrentSlug] = useState(data.homepageSlug);
   const [gapFillOpen, setGapFillOpen] = useState(null); // { section, idx, fields }
+  const [inlineEditOpen, setInlineEditOpen] = useState(null); // { section, idx }
 
   const isZh = lang === "zh";
   const hasZh =
@@ -456,14 +458,14 @@ export default function PreviewModal({
             <div className="preview-audit-header">
               <strong>想让 wiki 更丰富？</strong>
               <span className="preview-audit-sub">
-                这些建议是本地检查，不消耗解析额度。直接改表单，或点
-                <em>补充内容</em>用一份新的 PDF 自动补全某条经历。
+                每条经历有两种修补方式：<em>✏️ 编辑</em>手动改 AI 生成的内容，或
+                <em>📎 PDF 补充</em>再传一份 PDF 让 AI 自动补缺。
               </span>
             </div>
 
             {polishTargets.length > 0 && onApplyPolish && (
               <div className="preview-audit-polish-row">
-                <strong>补充内容：</strong>
+                <strong>修改 / 补充：</strong>
                 {polishTargets.map((t) => {
                   const arr = data[t.section] || [];
                   const ent = arr[t.idx];
@@ -471,24 +473,37 @@ export default function PreviewModal({
                   const isGap = t.flaggedCount > 0;
                   const labelSuffix = isGap
                     ? `（缺 ${t.flaggedCount} 项）`
-                    : `（润色）`;
+                    : "";
                   return (
-                    <button
+                    <div
                       key={`${t.section}-${t.idx}`}
-                      type="button"
-                      className={`preview-audit-polish-btn ${isGap ? "is-gap" : "is-enrich"}`}
-                      onClick={() => setGapFillOpen(t)}
-                      title={
-                        isGap
-                          ? `补全缺失字段：${t.fields.join("、")}`
-                          : `用新的 PDF / 文字补充 ${ent.name} 的详情`
-                      }
+                      className={`preview-audit-polish-group ${isGap ? "is-gap" : "is-enrich"}`}
                     >
-                      {ent.name || `[${t.section}[${t.idx}]]`}{" "}
-                      <span className="preview-audit-polish-fields">
-                        {labelSuffix}
+                      <span className="preview-audit-polish-label">
+                        {ent.name || `[${t.section}[${t.idx}]]`}
+                        {labelSuffix && (
+                          <span className="preview-audit-polish-fields">
+                            {labelSuffix}
+                          </span>
+                        )}
                       </span>
-                    </button>
+                      <button
+                        type="button"
+                        className="preview-audit-action-btn"
+                        onClick={() => setInlineEditOpen({ section: t.section, idx: t.idx })}
+                        title={`直接手动改 ${ent.name} 的字段`}
+                      >
+                        ✏️ 编辑
+                      </button>
+                      <button
+                        type="button"
+                        className="preview-audit-action-btn is-secondary"
+                        onClick={() => setGapFillOpen(t)}
+                        title={`再传一份 PDF / 粘贴文字，让 AI 补全 ${ent.name} 的字段`}
+                      >
+                        📎 PDF 补充
+                      </button>
+                    </div>
                   );
                 })}
               </div>
@@ -543,6 +558,23 @@ export default function PreviewModal({
                 onApplyPolish(gapFillOpen.section, idx, patch);
               }}
               onClose={() => setGapFillOpen(null)}
+            />
+          );
+        })()}
+
+        {inlineEditOpen && onApplyPolish && (() => {
+          const arr = data[inlineEditOpen.section] || [];
+          const entity = arr[inlineEditOpen.idx];
+          if (!entity) return null;
+          return (
+            <EntityInlineEditor
+              entityType={inlineEditOpen.section}
+              entityIdx={inlineEditOpen.idx}
+              entity={entity}
+              onApply={(idx, patch) => {
+                onApplyPolish(inlineEditOpen.section, idx, patch);
+              }}
+              onClose={() => setInlineEditOpen(null)}
             />
           );
         })()}
