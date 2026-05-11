@@ -493,7 +493,7 @@ export default function SetupForm() {
         第二步 · 核对并编辑信息
       </h2>
       <p className="setup-help" style={{ marginTop: -8, marginBottom: 14 }}>
-        AI 已经把识别到的内容填到下面表单里，看一眼有没有错漏。
+        已经把识别到的内容填到下面表单里，看一眼有没有错漏。
         所有英文版字段都是<strong>选填</strong>——只填中文也能上线。
       </p>
 
@@ -545,7 +545,7 @@ export default function SetupForm() {
           />
           <div className="setup-help">
             建议用<strong>第三人称</strong>（"王雪是..." 而不是 "我是..."），更像维基百科风格。
-            不会写？没关系，先随便写两句，之后还能用 AI 帮你润色。
+            不会写？没关系，先随便写两句，之后可以让我们帮你润色。
           </div>
         </div>
 
@@ -821,7 +821,7 @@ export default function SetupForm() {
       <div className="setup-section">
         <h3 className="setup-section-heading">教育经历（选填）</h3>
         <div className="setup-help" style={{ marginTop: -8, marginBottom: 12 }}>
-          每段经历会生成一个学校的 wiki 页面。详情可以让 AI 从你的简历自动填，
+          每段经历会生成一个学校的 wiki 页面。详情可以从你的简历自动填，
           也可以手动写。
         </div>
         {eduFields.map((field, idx) => (

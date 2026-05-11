@@ -456,7 +456,7 @@ export default function PreviewModal({
             <div className="preview-audit-header">
               <strong>想让 wiki 更丰富？</strong>
               <span className="preview-audit-sub">
-                这些建议是本地检查，不消耗 AI 额度。直接改表单，或点
+                这些建议是本地检查，不消耗解析额度。直接改表单，或点
                 <em>补充内容</em>用一份新的 PDF 自动补全某条经历。
               </span>
             </div>

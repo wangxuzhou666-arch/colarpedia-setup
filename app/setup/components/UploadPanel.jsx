@@ -179,7 +179,7 @@ export default function UploadPanel({
       <h2 className="setup-section-heading">第一步 · 上传简历</h2>
       <p className="setup-help" style={{ marginTop: -8, marginBottom: 14 }}>
         把简历 PDF 拖进来，或者直接粘贴一段关于你自己的文字（领英 About、
-        知乎个人简介、随手写的草稿都可以）。AI 会在 10 秒内把表单帮你填好，
+        知乎个人简介、随手写的草稿都可以）。10 秒内自动帮你填好下面的表单，
         你再改不满意的地方。
       </p>
 
@@ -248,7 +248,7 @@ export default function UploadPanel({
           placeholder={
             file
               ? "已经选了 PDF 作为来源。换成粘贴文字的话，先把上面的 PDF 删掉。"
-              : "粘贴你的领英 About、个人简介草稿、随手写的笔记 —— 任何能让 AI 了解你的文字都行。"
+              : "粘贴你的领英 About、个人简介草稿、随手写的笔记 —— 任何能描述你的文字都行。"
           }
         />
       </div>
@@ -259,7 +259,7 @@ export default function UploadPanel({
         disabled={busy || (!file && !pasted.trim())}
         className="setup-button-primary"
       >
-        {busy ? "AI 正在读取…" : "解析并填好下方表单"}
+        {busy ? "正在读取…" : "解析并填好下方表单"}
       </button>
 
       {error && <div className="upload-error">{error}</div>}
@@ -275,7 +275,7 @@ function humanizeParseError(raw) {
     return "今天免费解析次数用完了（每个网络每天 10 次）。明天再试，或者直接在下面表单手动填。";
   }
   if (/Model did not return structured data|tool_use/i.test(msg)) {
-    return "AI 没看明白这份 PDF（可能是扫描件 / 排版太复杂）。试试在下方粘贴文字版，或换一份 PDF。";
+    return "没看明白这份 PDF（可能是扫描件 / 排版太复杂）。试试在下方粘贴文字版，或换一份 PDF。";
   }
   if (/PDF|pdf-parse/i.test(msg)) {
     return "PDF 读取失败，可能是加密或扫描件。建议导出为可选中文字的 PDF 再上传，或直接在下面粘贴文字。";

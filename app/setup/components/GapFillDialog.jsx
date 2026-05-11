@@ -195,7 +195,7 @@ export default function GapFillDialog({
             <div className="gapfill-col-heading">补充材料</div>
             <p className="setup-help" style={{ marginTop: 0 }}>
               拖一份 PDF（项目 README、岗位描述、学校公告、证书都行），
-              或者直接在下面粘贴文字。AI 只会补上面列出来的那些缺失字段，
+              或者直接在下面粘贴文字。我们只会补上面列出来的那些缺失字段，
               内容必须来自你提供的材料。
             </p>
 
@@ -271,7 +271,7 @@ export default function GapFillDialog({
                   <div className="gapfill-result-empty">
                     没在这份材料里找到能补充的新内容。
                     {(result.rejected || []).length > 0 &&
-                      " AI 尝试填了一些字段，但找不到原文依据，已丢弃。"}
+                      " 尝试填了一些字段，但找不到原文依据，已丢弃。"}
                   </div>
                 )}
 
