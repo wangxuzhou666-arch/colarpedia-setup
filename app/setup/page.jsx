@@ -6,7 +6,38 @@ export const metadata = {
     "上传简历，自动生成像维基百科一样的个人主页。免费、开源、不用编程。",
 };
 
-export default function SetupPage() {
+// 项目 GitHub 仓库 — 用于 tab bar 显示 star 数 + 点击跳转
+const GITHUB_REPO = "wangxuzhou666-arch/colarpedia-setup";
+const GITHUB_URL = `https://github.com/${GITHUB_REPO}`;
+
+// 服务端拉取 GitHub star 数，ISR 缓存 1 小时（避免每个请求都打 GitHub API
+// 60 req/h/IP 的限额）。失败时返回 null，UI 兜底只显示 "GitHub"。
+async function fetchStarCount() {
+  try {
+    const res = await fetch(`https://api.github.com/repos/${GITHUB_REPO}`, {
+      next: { revalidate: 3600 },
+      headers: { Accept: "application/vnd.github+json" },
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return typeof data.stargazers_count === "number" ? data.stargazers_count : null;
+  } catch {
+    return null;
+  }
+}
+
+function formatStars(n) {
+  if (n == null || n < 1) return null;
+  if (n < 1000) return String(n);
+  if (n < 10000) return (n / 1000).toFixed(1) + "k";
+  return Math.round(n / 1000) + "k";
+}
+
+export default async function SetupPage() {
+  const stars = await fetchStarCount();
+  const starsLabel = formatStars(stars);
+  const starsTabText = starsLabel ? `★ ${starsLabel} on GitHub` : "★ Star on GitHub";
+
   return (
     <>
       <div className="wiki-topbar">
@@ -23,7 +54,7 @@ export default function SetupPage() {
             生成
           </a>
           <a
-            href="/wiki/Jane_Doe/"
+            href="/demo/"
             target="_blank"
             rel="noreferrer"
             title="看看做出来长什么样"
@@ -31,13 +62,13 @@ export default function SetupPage() {
             示例预览
           </a>
           <a
-            href="https://github.com/wangxuzhou666-arch/colarpedia-template"
+            href={GITHUB_URL}
             className="external"
             target="_blank"
             rel="noreferrer"
-            title="开源代码仓库"
+            title="到 GitHub 给项目点个 star"
           >
-            开源代码
+            {starsTabText}
           </a>
         </div>
       </div>
@@ -56,7 +87,7 @@ export default function SetupPage() {
 
         <p className="setup-meta">
           想看做出来长什么样？{" "}
-          <a href="/wiki/Jane_Doe/" target="_blank" rel="noreferrer">
+          <a href="/demo/" target="_blank" rel="noreferrer">
             点这里看示例
           </a>
           。
