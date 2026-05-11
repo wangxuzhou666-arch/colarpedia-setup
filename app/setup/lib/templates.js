@@ -415,11 +415,9 @@ export function projectPageTemplate(project, ctx, { lang = "en" } = {}) {
     ? `**${safeProjectName}** 是 ${linkedPerson} 的项目${safeSubtitle ? `,${safeSubtitle}` : ""}。`
     : `**${safeProjectNameEn}** is a project by ${linkedPerson}${safeSubtitle ? `, ${safeSubtitle}` : ""}.`;
 
-  const body = isZh
-    ? project.body_zh ||
-      `_(此页面正在等待详细内容。可在 \`wiki/${project.slug || project.name}.zh.md\` 中编辑。)_`
-    : project.body ||
-      `_(This page awaits detailed content. Edit \`wiki/${project.slug || project.name}.md\` to fill it in.)_`;
+  // No body? Render nothing — the lead + infobox carry the basic info,
+  // and a placeholder line ships to real users as broken / unfinished.
+  const body = (isZh ? project.body_zh : project.body) || "";
 
   const seeAlsoHeading = isZh ? "## 参见" : "## See also";
   const referencesHeading = isZh ? "## 参考文献" : "## References";
@@ -513,19 +511,48 @@ export function institutionPageTemplate(entity, ctx, kind, { lang = "en" } = {})
     : inlineMarkdownText(personName);
   const entityNameSafe = inlineMarkdownText(entity.name_zh || entity.name);
   const entityNameEnSafe = inlineMarkdownText(entity.name);
-  const lead = isEducation
-    ? isZh
-      ? `**${entityNameSafe}** 是 ${linkedPerson} 的母校之一。`
-      : `**${entityNameEnSafe}** is one of the institutions attended by ${linkedPerson}.`
-    : isZh
-    ? `**${entityNameSafe}** 是 ${linkedPerson} 曾任职的雇主。`
-    : `**${entityNameEnSafe}** is an employer that ${linkedPerson} has worked at.`;
 
-  const body = isZh
-    ? entity.body_zh ||
-      `_(此页面正在等待详细内容。可在 \`wiki/${entity.slug || entity.name}.zh.md\` 中编辑。)_`
-    : entity.body ||
-      `_(This page awaits detailed content. Edit \`wiki/${entity.slug || entity.name}.md\` to fill it in.)_`;
+  // Compose lead from whatever infobox fields are available — degree/role
+  // and date_range bring real information, the bare "X 是 Y 曾任职的雇主"
+  // fallback should only fire when literally nothing else is filled.
+  const dateZh = entity.date_range || "";
+  const dateEn = entity.date_range || "";
+  const degreeZh = entity.degree_zh || entity.degree || "";
+  const degreeEn = entity.degree || "";
+  const roleZh = entity.role_zh || entity.role || "";
+  const roleEn = entity.role || "";
+
+  let lead;
+  if (isEducation) {
+    if (isZh) {
+      if (degreeZh && dateZh) lead = `**${entityNameSafe}** 是 ${linkedPerson} ${dateZh}攻读${degreeZh}的院校。`;
+      else if (degreeZh) lead = `**${entityNameSafe}** 是 ${linkedPerson} 攻读${degreeZh}的院校。`;
+      else if (dateZh) lead = `**${entityNameSafe}** 是 ${linkedPerson} ${dateZh}就读的院校。`;
+      else lead = `**${entityNameSafe}** 是 ${linkedPerson} 的母校之一。`;
+    } else {
+      if (degreeEn && dateEn) lead = `**${entityNameEnSafe}** is where ${linkedPerson} pursued the ${degreeEn} (${dateEn}).`;
+      else if (degreeEn) lead = `**${entityNameEnSafe}** is where ${linkedPerson} pursued the ${degreeEn}.`;
+      else if (dateEn) lead = `**${entityNameEnSafe}** is where ${linkedPerson} studied (${dateEn}).`;
+      else lead = `**${entityNameEnSafe}** is one of the institutions attended by ${linkedPerson}.`;
+    }
+  } else {
+    if (isZh) {
+      if (roleZh && dateZh) lead = `**${entityNameSafe}** 是 ${linkedPerson} ${dateZh}担任${roleZh}的雇主。`;
+      else if (roleZh) lead = `**${entityNameSafe}** 是 ${linkedPerson} 担任${roleZh}的雇主。`;
+      else if (dateZh) lead = `**${entityNameSafe}** 是 ${linkedPerson} ${dateZh}任职的雇主。`;
+      else lead = `**${entityNameSafe}** 是 ${linkedPerson} 曾任职的雇主。`;
+    } else {
+      if (roleEn && dateEn) lead = `**${entityNameEnSafe}** is where ${linkedPerson} worked as ${roleEn} (${dateEn}).`;
+      else if (roleEn) lead = `**${entityNameEnSafe}** is where ${linkedPerson} worked as ${roleEn}.`;
+      else if (dateEn) lead = `**${entityNameEnSafe}** is an employer where ${linkedPerson} worked (${dateEn}).`;
+      else lead = `**${entityNameEnSafe}** is an employer that ${linkedPerson} has worked at.`;
+    }
+  }
+
+  // No body? Render nothing. The lead + infobox already carry the info;
+  // a placeholder string ("此页面正在等待详细内容") would ship to real users
+  // and read as broken / unfinished.
+  const body = (isZh ? entity.body_zh : entity.body) || "";
 
   const seeAlsoHeading = isZh ? "## 参见" : "## See also";
   const referencesHeading = isZh ? "## 参考文献" : "## References";

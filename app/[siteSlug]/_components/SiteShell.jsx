@@ -121,9 +121,33 @@ function buildEntityInfobox(kind, entity, isZh) {
     }
     if (entity.date_range) rows.push([isZh ? "时间" : "Dates", entity.date_range]);
   }
+
+  const logo = entity.logo;
+  const logoCaption =
+    (isZh ? entity.logo_caption_zh : entity.logo_caption) || entity.logo_caption || "";
+
   return (
     <aside className="wiki-infobox" aria-label={isZh ? "信息卡" : "Infobox"}>
       <div className="wiki-infobox-title">{entity.name}</div>
+      {logo && (
+        <div className="wiki-infobox-image">
+          <img
+            src={logo}
+            alt={entity.name}
+            style={{
+              width: "100%",
+              maxHeight: 200,
+              objectFit: "contain",
+              background: "#fff",
+              padding: 12,
+              boxSizing: "border-box",
+            }}
+          />
+          {logoCaption && (
+            <div className="wiki-infobox-caption">{logoCaption}</div>
+          )}
+        </div>
+      )}
       <table>
         <tbody>
           {rows.map(([k, v]) => (
