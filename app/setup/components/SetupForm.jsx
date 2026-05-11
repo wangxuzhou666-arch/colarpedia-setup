@@ -1250,6 +1250,18 @@ export default function SetupForm() {
               想改内容？回到这个页面改完表单，再点一次「一键上线」就行。
             </div>
 
+            <div className="setup-help" style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid var(--wiki-border)" }}>
+              觉得 Yourpedia 好用？
+              <a
+                href="https://github.com/wangxuzhou666-arch/colarpedia-setup"
+                target="_blank"
+                rel="noreferrer"
+                style={{ marginLeft: 4 }}
+              >
+                给项目点个 star →
+              </a>
+            </div>
+
             <details className="setup-array-details" style={{ marginTop: 14 }}>
               <summary>想用自己的域名（如 wangxue.com）？</summary>
               <div className="setup-help" style={{ marginTop: 10 }}>

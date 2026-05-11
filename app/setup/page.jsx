@@ -36,7 +36,9 @@ function formatStars(n) {
 export default async function SetupPage() {
   const stars = await fetchStarCount();
   const starsLabel = formatStars(stars);
-  const starsTabText = starsLabel ? `★ ${starsLabel} on GitHub` : "★ Star on GitHub";
+  const githubFooterText = starsLabel
+    ? `View on GitHub · ${starsLabel} stars`
+    : "View on GitHub";
 
   return (
     <>
@@ -45,30 +47,6 @@ export default async function SetupPage() {
           <a href="/" className="wiki-logo">
             Yourpedia
             <span>把你的简历变成像维基百科的个人主页 · 5 分钟 · 免费</span>
-          </a>
-        </div>
-      </div>
-      <div className="wiki-tabs">
-        <div className="wiki-tabs-inner">
-          <a href="#" className="active">
-            生成
-          </a>
-          <a
-            href="/demo/"
-            target="_blank"
-            rel="noreferrer"
-            title="看看做出来长什么样"
-          >
-            示例预览
-          </a>
-          <a
-            href={GITHUB_URL}
-            className="external"
-            target="_blank"
-            rel="noreferrer"
-            title="到 GitHub 给项目点个 star"
-          >
-            {starsTabText}
           </a>
         </div>
       </div>
@@ -104,6 +82,11 @@ export default async function SetupPage() {
         <p>
           内容版权归作者本人所有。Yourpedia 在视觉风格上致敬维基百科，
           与 Wikimedia 基金会无关联。
+        </p>
+        <p className="wiki-footer-meta">
+          <a href={GITHUB_URL} target="_blank" rel="noreferrer">
+            {githubFooterText}
+          </a>
         </p>
       </footer>
     </>
