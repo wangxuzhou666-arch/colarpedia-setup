@@ -33,12 +33,18 @@ function formatStars(n) {
   return Math.round(n / 1000) + "k";
 }
 
+// social proof 门槛：star 数 < 5 时显示 ASK（明确求支持），
+// ≥ 5 时切回 social proof（有数据可以炫耀了）。
+// 不显示 0/1/2 是因为 0 user 阶段挂"0 stars"是反向 social proof。
+const SOCIAL_PROOF_THRESHOLD = 5;
+
 export default async function SetupPage() {
   const stars = await fetchStarCount();
   const starsLabel = formatStars(stars);
-  const githubFooterText = starsLabel
-    ? `View on GitHub · ${starsLabel} stars`
-    : "View on GitHub";
+  const useProof = stars != null && stars >= SOCIAL_PROOF_THRESHOLD;
+  const githubFooterText = useProof
+    ? `${starsLabel} stars on GitHub →`
+    : "Yourpedia 是一个人维护的开源项目，喜欢的话给个 star 支持一下 →";
 
   return (
     <>
