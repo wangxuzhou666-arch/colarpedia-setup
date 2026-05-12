@@ -272,23 +272,64 @@ export default function SetupForm() {
   }, [nameValue, slugTouched, setValue]);
 
   // 中国留学生示例（找北美 SDE / MLE 实习）—— 直接从 demoFixtures 拉完整数据
+  // strip 掉非 schema 字段（logo / logo_caption / portrait 等）避免 react-hook-form replace 出错
   const fillStudentExample = () => {
     const fx = getFixture("wang-xue");
-    if (!fx) return;
-    setValue("name", fx.name);
-    setValue("name_zh", fx.name_zh);
-    setValue("homepageSlug", fx.homepageSlug);
+    if (!fx) {
+      console.error("[fillStudentExample] getFixture('wang-xue') returned null");
+      return;
+    }
+    const pickShipped = (s) => ({
+      name: s.name || "",
+      name_zh: s.name_zh || "",
+      slug: s.slug || "",
+      description: s.description || "",
+      description_zh: s.description_zh || "",
+      role: s.role || "",
+      role_zh: s.role_zh || "",
+      date_range: s.date_range || "",
+      url: s.url || "",
+      tech_stack: s.tech_stack || [],
+      body: s.body || "",
+      body_zh: s.body_zh || "",
+    });
+    const pickEdu = (e) => ({
+      name: e.name || "",
+      name_zh: e.name_zh || "",
+      slug: e.slug || "",
+      degree: e.degree || "",
+      degree_zh: e.degree_zh || "",
+      date_range: e.date_range || "",
+      location: e.location || "",
+      body: e.body || "",
+      body_zh: e.body_zh || "",
+    });
+    const pickExp = (e) => ({
+      name: e.name || "",
+      name_zh: e.name_zh || "",
+      slug: e.slug || "",
+      role: e.role || "",
+      role_zh: e.role_zh || "",
+      date_range: e.date_range || "",
+      location: e.location || "",
+      body: e.body || "",
+      body_zh: e.body_zh || "",
+    });
+
+    setValue("name", fx.name || "");
+    setValue("name_zh", fx.name_zh || "");
+    setValue("homepageSlug", fx.homepageSlug || "");
     setSlugTouched(true);
-    setValue("tagline", fx.tagline);
-    setValue("tagline_zh", fx.tagline_zh);
-    setValue("bio", fx.bio);
-    setValue("bio_zh", fx.bio_zh);
+    setValue("tagline", fx.tagline || "");
+    setValue("tagline_zh", fx.tagline_zh || "");
+    setValue("bio", fx.bio || "");
+    setValue("bio_zh", fx.bio_zh || "");
     setValue("email", fx.email || "");
     setValue("linkedin", fx.linkedin || "");
     setValue("githubProfile", fx.githubProfile || "");
-    replaceShippedAndClearThumbs(fx.shipped || []);
-    replaceEdu(fx.educations || []);
-    replaceExp(fx.experiences || []);
+    replaceShippedAndClearThumbs((fx.shipped || []).map(pickShipped));
+    replaceEdu((fx.educations || []).map(pickEdu));
+    replaceExp((fx.experiences || []).map(pickExp));
   };
 
   // 中国应届本科毕业生示例（求互联网产品 / 运营第一份工作）
