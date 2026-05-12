@@ -2,7 +2,7 @@
 
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSession, signIn, signOut } from "next-auth/react";
 import { setupSchema, deriveSlug } from "../lib/schema";
 import { getSupabaseBrowserClient } from "../../../lib/supabase/client";
@@ -226,6 +226,42 @@ export default function SetupForm() {
     () => arraySummary(experiencesValues, ["name_zh", "name"]),
     [experiencesValues]
   );
+
+  // 4 个 secondary section 折叠状态：默认全 closed（首次访问视觉密度最低）。
+  // PDF 解析或 example 填充后任一字段有值 → 自动一次性展开全部，
+  // 之后用户手动 toggle 不再被覆盖（autoExpandedRef 单向锁）。
+  const [contactOpen, setContactOpen] = useState(false);
+  const [projectsOpen, setProjectsOpen] = useState(false);
+  const [educationsOpen, setEducationsOpen] = useState(false);
+  const [experiencesOpen, setExperiencesOpen] = useState(false);
+  const autoExpandedRef = useRef(false);
+
+  useEffect(() => {
+    if (autoExpandedRef.current) return;
+    const hasData =
+      !!nameValue ||
+      !!emailValue ||
+      !!linkedinValue ||
+      !!githubProfileValue ||
+      (shippedValues?.length || 0) > 0 ||
+      (educationsValues?.length || 0) > 0 ||
+      (experiencesValues?.length || 0) > 0;
+    if (hasData) {
+      setContactOpen(true);
+      setProjectsOpen(true);
+      setEducationsOpen(true);
+      setExperiencesOpen(true);
+      autoExpandedRef.current = true;
+    }
+  }, [
+    nameValue,
+    emailValue,
+    linkedinValue,
+    githubProfileValue,
+    shippedValues,
+    educationsValues,
+    experiencesValues,
+  ]);
   useEffect(() => {
     if (!slugTouched && nameValue) {
       setValue("homepageSlug", deriveSlug(nameValue), {
@@ -692,7 +728,11 @@ export default function SetupForm() {
       </div>
 
       {/* 联系方式 */}
-      <details className="setup-section">
+      <details
+        className="setup-section"
+        open={contactOpen}
+        onToggle={(e) => setContactOpen(e.currentTarget.open)}
+      >
         <summary>
           <h3 className="setup-section-heading">
             联系方式（选填，建议至少留一个）
@@ -751,7 +791,11 @@ export default function SetupForm() {
       </details>
 
       {/* 项目作品 */}
-      <details className="setup-section">
+      <details
+        className="setup-section"
+        open={projectsOpen}
+        onToggle={(e) => setProjectsOpen(e.currentTarget.open)}
+      >
         <summary>
           <h3 className="setup-section-heading">
             项目作品（选填，每个生成独立 wiki 页）
@@ -936,7 +980,11 @@ export default function SetupForm() {
       </details>
 
       {/* 教育经历 */}
-      <details className="setup-section">
+      <details
+        className="setup-section"
+        open={educationsOpen}
+        onToggle={(e) => setEducationsOpen(e.currentTarget.open)}
+      >
         <summary>
           <h3 className="setup-section-heading">
             教育经历（选填，每段生成学校独立 wiki 页）
@@ -1063,7 +1111,11 @@ export default function SetupForm() {
       </details>
 
       {/* 工作经历 */}
-      <details className="setup-section">
+      <details
+        className="setup-section"
+        open={experiencesOpen}
+        onToggle={(e) => setExperiencesOpen(e.currentTarget.open)}
+      >
         <summary>
           <h3 className="setup-section-heading">
             工作经历（选填，每段生成公司独立 wiki 页）
