@@ -579,8 +579,10 @@ export default function SetupForm() {
         <h3 className="setup-section-heading">个人信息</h3>
 
         <div className="setup-field">
-          <label className="setup-label setup-label-required">中文姓名</label>
+          <label htmlFor="field-name-zh" className="setup-label setup-label-required">中文姓名</label>
           <input
+            id="field-name-zh"
+            aria-required="true"
             {...register("name_zh")}
             className="setup-input"
             placeholder="王雪"
@@ -588,23 +590,27 @@ export default function SetupForm() {
         </div>
 
         <div className="setup-field">
-          <label className="setup-label setup-label-required">英文姓名（用作链接）</label>
+          <label htmlFor="field-name" className="setup-label setup-label-required">英文姓名（用作链接）</label>
           <input
+            id="field-name"
+            aria-required="true"
+            aria-describedby="field-name-help"
             {...register("name")}
             className="setup-input"
             placeholder="Wang Xue"
           />
-          <div className="setup-help">
+          <div id="field-name-help" className="setup-help">
             用于页面链接（/wiki/Wang_Xue/），可填拼音。
           </div>
           {errors.name && (
-            <div className="setup-error">{errors.name.message}</div>
+            <div className="setup-error" role="alert">{errors.name.message}</div>
           )}
         </div>
 
         <div className="setup-field">
-          <label className="setup-label">一句话介绍</label>
+          <label htmlFor="field-tagline-zh" className="setup-label">一句话介绍</label>
           <input
+            id="field-tagline-zh"
             {...register("tagline_zh")}
             className="setup-input"
             placeholder="软件工程师 · 宾大硕士在读 · 关注 AI 工具方向"
@@ -612,14 +618,16 @@ export default function SetupForm() {
         </div>
 
         <div className="setup-field">
-          <label className="setup-label">个人简介</label>
+          <label htmlFor="field-bio-zh" className="setup-label">个人简介</label>
           <textarea
+            id="field-bio-zh"
+            aria-describedby="field-bio-zh-help"
             {...register("bio_zh")}
             rows={5}
             className="setup-textarea"
             placeholder="用第三人称写几段话介绍你自己，像维基百科一样。例如：王雪是宾夕法尼亚大学系统工程方向的硕士在读生..."
           />
-          <div className="setup-help">
+          <div id="field-bio-zh-help" className="setup-help">
             用<strong>第三人称</strong>撰写（例："王雪是..."），更像维基百科风格。
           </div>
         </div>
@@ -713,17 +721,19 @@ export default function SetupForm() {
         </div>
 
         <div className="setup-field">
-          <label className="setup-label">领英 LinkedIn</label>
+          <label htmlFor="field-linkedin" className="setup-label">领英 LinkedIn</label>
           <input
+            id="field-linkedin"
+            aria-describedby="field-linkedin-help"
             {...register("linkedin")}
             className="setup-input"
             placeholder="linkedin.com/in/wangxue"
           />
-          <div className="setup-help">
+          <div id="field-linkedin-help" className="setup-help">
             粘贴链接或路径，无需 https://。
           </div>
           {errors.linkedin && (
-            <div className="setup-error">{errors.linkedin.message}</div>
+            <div className="setup-error" role="alert">{errors.linkedin.message}</div>
           )}
         </div>
 
@@ -761,7 +771,12 @@ export default function SetupForm() {
           const thumb = projectThumbs[idx];
           const thumbErr = projectThumbErrors[idx];
           return (
-            <div key={field.id} className="setup-array-row">
+            <div
+              key={field.id}
+              className="setup-array-row"
+              role="group"
+              aria-label={`项目 ${idx + 1}`}
+            >
               <div>
                 <label className="setup-label">项目名</label>
                 <input
@@ -782,6 +797,7 @@ export default function SetupForm() {
                 type="button"
                 onClick={() => removeProjectRow(idx)}
                 className="setup-button"
+                aria-label={`删除项目 ${idx + 1}`}
               >
                 删除
               </button>
@@ -936,7 +952,12 @@ export default function SetupForm() {
           </span>
         </summary>
         {eduFields.map((field, idx) => (
-          <div key={field.id} className="setup-array-row">
+          <div
+            key={field.id}
+            className="setup-array-row"
+            role="group"
+            aria-label={`教育经历 ${idx + 1}`}
+          >
             <div>
               <label className="setup-label">学校</label>
               <input
@@ -983,6 +1004,7 @@ export default function SetupForm() {
               type="button"
               onClick={() => removeEdu(idx)}
               className="setup-button"
+              aria-label={`删除教育经历 ${idx + 1}`}
             >
               删除
             </button>
@@ -1057,7 +1079,12 @@ export default function SetupForm() {
           </span>
         </summary>
         {expFields.map((field, idx) => (
-          <div key={field.id} className="setup-array-row">
+          <div
+            key={field.id}
+            className="setup-array-row"
+            role="group"
+            aria-label={`工作经历 ${idx + 1}`}
+          >
             <div>
               <label className="setup-label">公司</label>
               <input
@@ -1104,6 +1131,7 @@ export default function SetupForm() {
               type="button"
               onClick={() => removeExp(idx)}
               className="setup-button"
+              aria-label={`删除工作经历 ${idx + 1}`}
             >
               删除
             </button>
@@ -1171,23 +1199,27 @@ export default function SetupForm() {
         </summary>
 
         <div className="setup-field" style={{ marginTop: 14 }}>
-          <label className="setup-label">站点名称</label>
+          <label htmlFor="field-site-name" className="setup-label">站点名称</label>
           <input
+            id="field-site-name"
+            aria-describedby="field-site-name-help"
             {...register("siteName")}
             className="setup-input"
             placeholder="Yourpedia"
           />
-          <div className="setup-help">
+          <div id="field-site-name-help" className="setup-help">
             显示在网站顶部，如 "Wangpedia"。
           </div>
           {errors.siteName && (
-            <div className="setup-error">{errors.siteName.message}</div>
+            <div className="setup-error" role="alert">{errors.siteName.message}</div>
           )}
         </div>
 
         <div className="setup-field">
-          <label className="setup-label">个人主页 slug</label>
+          <label htmlFor="field-slug" className="setup-label">个人主页 slug</label>
           <input
+            id="field-slug"
+            aria-describedby="field-slug-help"
             {...register("homepageSlug")}
             onChange={(e) => {
               setSlugTouched(true);
@@ -1196,48 +1228,58 @@ export default function SetupForm() {
             className="setup-input"
             placeholder="Wang_Xue"
           />
-          <div className="setup-help">
+          <div id="field-slug-help" className="setup-help">
             主页 URL 后缀（/wiki/Wang_Xue/），自动生成。
           </div>
           {errors.homepageSlug && (
-            <div className="setup-error">{errors.homepageSlug.message}</div>
+            <div className="setup-error" role="alert">{errors.homepageSlug.message}</div>
           )}
         </div>
 
         <div className="setup-field">
-          <label className="setup-label">站点域名</label>
+          <label htmlFor="field-domain" className="setup-label">站点域名</label>
           <input
+            id="field-domain"
+            aria-describedby="field-domain-help"
             {...register("metaBaseUrl")}
             className="setup-input"
             placeholder="your-site.vercel.app"
           />
-          <div className="setup-help">
+          <div id="field-domain-help" className="setup-help">
             上线后的网址（如 wangxue.vercel.app），未上线可留空。
           </div>
           {errors.metaBaseUrl && (
-            <div className="setup-error">{errors.metaBaseUrl.message}</div>
+            <div className="setup-error" role="alert">{errors.metaBaseUrl.message}</div>
           )}
         </div>
 
-        <div className="setup-field-row">
+        <div
+          className="setup-field-row"
+          role="group"
+          aria-labelledby="github-repo-help"
+        >
           <div className="setup-field">
-            <label className="setup-label">GitHub 用户名</label>
+            <label htmlFor="field-gh-owner" className="setup-label">GitHub 用户名</label>
             <input
+              id="field-gh-owner"
+              aria-describedby="github-repo-help"
               {...register("githubOwner")}
               className="setup-input"
               placeholder="your-github-username"
             />
           </div>
           <div className="setup-field">
-            <label className="setup-label">GitHub 仓库名</label>
+            <label htmlFor="field-gh-repo" className="setup-label">GitHub 仓库名</label>
             <input
+              id="field-gh-repo"
+              aria-describedby="github-repo-help"
               {...register("githubRepo")}
               className="setup-input"
               placeholder="your-wiki-repo"
             />
           </div>
         </div>
-        <div className="setup-help">
+        <div id="github-repo-help" className="setup-help">
           用于页面顶部 "查看源代码 / 历史" 链接，上线后再填。
         </div>
       </details>
