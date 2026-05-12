@@ -109,6 +109,8 @@ export default function SetupForm() {
   const [publishStep, setPublishStep] = useState("idle"); // idle | publishing | done | error
   const [publishResult, setPublishResult] = useState(null);
   const [publishError, setPublishError] = useState("");
+  // 英文版字段全局开关。默认开（保持当前行为），用户可关掉砍密度。
+  const [showEnglish, setShowEnglish] = useState(true);
 
   // 监听 Supabase session
   useEffect(() => {
@@ -492,9 +494,40 @@ export default function SetupForm() {
       <h2 className="setup-section-heading" style={{ marginTop: 32 }}>
         第二步 · 核对并编辑信息
       </h2>
-      <p className="setup-help" style={{ marginTop: -8, marginBottom: 14 }}>
-        英文字段均为选填，仅填中文即可上线。
-      </p>
+      <div
+        style={{
+          marginTop: -8,
+          marginBottom: 14,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 12,
+          flexWrap: "wrap",
+        }}
+      >
+        <p className="setup-help" style={{ margin: 0 }}>
+          英文字段均为选填，仅填中文即可上线。
+        </p>
+        <label
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 6,
+            fontSize: "0.9em",
+            color: "var(--wiki-text-soft)",
+            cursor: "pointer",
+            userSelect: "none",
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={showEnglish}
+            onChange={(e) => setShowEnglish(e.target.checked)}
+            style={{ margin: 0 }}
+          />
+          显示英文版字段
+        </label>
+      </div>
 
       {/* 个人信息 */}
       <div className="setup-section">
@@ -581,26 +614,28 @@ export default function SetupForm() {
           {photoError && <div className="setup-error">{photoError}</div>}
         </div>
 
-        <details className="setup-array-details" style={{ marginTop: 8 }}>
-          <summary>想做英文版？展开填英文姓名 / 简介</summary>
-          <div className="setup-field" style={{ marginTop: 12 }}>
-            <label className="setup-label">英文一句话介绍</label>
-            <input
-              {...register("tagline")}
-              className="setup-input"
-              placeholder="Software engineer, UPenn MS, interested in AI tooling"
-            />
-          </div>
-          <div className="setup-field">
-            <label className="setup-label">英文简介（bio）</label>
-            <textarea
-              {...register("bio")}
-              rows={4}
-              className="setup-textarea"
-              placeholder="Write your story in third person, Wikipedia-style..."
-            />
-          </div>
-        </details>
+        {showEnglish && (
+          <details className="setup-array-details" style={{ marginTop: 8 }}>
+            <summary>英文版（选填）</summary>
+            <div className="setup-field" style={{ marginTop: 12 }}>
+              <label className="setup-label">英文一句话介绍</label>
+              <input
+                {...register("tagline")}
+                className="setup-input"
+                placeholder="Software engineer, UPenn MS, interested in AI tooling"
+              />
+            </div>
+            <div className="setup-field">
+              <label className="setup-label">英文简介（bio）</label>
+              <textarea
+                {...register("bio")}
+                rows={4}
+                className="setup-textarea"
+                placeholder="Write your story in third person, Wikipedia-style..."
+              />
+            </div>
+          </details>
+        )}
       </div>
 
       {/* 联系方式 */}
@@ -733,7 +768,7 @@ export default function SetupForm() {
                 className="setup-array-details"
                 style={{ gridColumn: "1 / -1", marginTop: 6 }}
               >
-                <summary>更多字段（角色 / 时间 / 链接 / 详情 / 英文版）</summary>
+                <summary>更多字段（角色 / 时间 / 链接 / 详情）</summary>
                 <div className="setup-field-row" style={{ marginTop: 10 }}>
                   <div>
                     <label className="setup-label">担任角色</label>
@@ -769,23 +804,27 @@ export default function SetupForm() {
                     placeholder="项目背景、解决了什么问题、技术方案、产出..."
                   />
                 </div>
-                <div className="setup-field" style={{ marginTop: 10 }}>
-                  <label className="setup-label">英文版简介（选填）</label>
-                  <input
-                    {...register(`shipped.${idx}.description`)}
-                    className="setup-input"
-                    placeholder="open-source dev console (2024)"
-                  />
-                </div>
-                <div className="setup-field" style={{ marginTop: 10 }}>
-                  <label className="setup-label">英文详情（选填）</label>
-                  <textarea
-                    {...register(`shipped.${idx}.body`)}
-                    rows={3}
-                    className="setup-textarea"
-                    placeholder="Project background, problem, approach, outcome..."
-                  />
-                </div>
+                {showEnglish && (
+                  <>
+                    <div className="setup-field" style={{ marginTop: 10 }}>
+                      <label className="setup-label">英文版简介（选填）</label>
+                      <input
+                        {...register(`shipped.${idx}.description`)}
+                        className="setup-input"
+                        placeholder="open-source dev console (2024)"
+                      />
+                    </div>
+                    <div className="setup-field" style={{ marginTop: 10 }}>
+                      <label className="setup-label">英文详情（选填）</label>
+                      <textarea
+                        {...register(`shipped.${idx}.body`)}
+                        rows={3}
+                        className="setup-textarea"
+                        placeholder="Project background, problem, approach, outcome..."
+                      />
+                    </div>
+                  </>
+                )}
               </details>
             </div>
           );
@@ -821,22 +860,24 @@ export default function SetupForm() {
                 className="setup-input"
                 placeholder="宾夕法尼亚大学"
               />
-              <input
-                {...register(`educations.${idx}.name`)}
-                className="setup-input"
-                placeholder="University of Pennsylvania"
-                onBlur={(e) => {
-                  const cur = watch(`educations.${idx}.slug`);
-                  if (!cur && e.target.value) {
-                    setValue(
-                      `educations.${idx}.slug`,
-                      deriveSlug(e.target.value),
-                      { shouldValidate: false }
-                    );
-                  }
-                }}
-                style={{ marginTop: 6 }}
-              />
+              {showEnglish && (
+                <input
+                  {...register(`educations.${idx}.name`)}
+                  className="setup-input"
+                  placeholder="University of Pennsylvania"
+                  onBlur={(e) => {
+                    const cur = watch(`educations.${idx}.slug`);
+                    if (!cur && e.target.value) {
+                      setValue(
+                        `educations.${idx}.slug`,
+                        deriveSlug(e.target.value),
+                        { shouldValidate: false }
+                      );
+                    }
+                  }}
+                  style={{ marginTop: 6 }}
+                />
+              )}
             </div>
             <div>
               <label className="setup-label">学位 / 专业</label>
@@ -845,12 +886,14 @@ export default function SetupForm() {
                 className="setup-input"
                 placeholder="系统工程硕士"
               />
-              <input
-                {...register(`educations.${idx}.degree`)}
-                className="setup-input"
-                placeholder="MSE in Systems Engineering"
-                style={{ marginTop: 6 }}
-              />
+              {showEnglish && (
+                <input
+                  {...register(`educations.${idx}.degree`)}
+                  className="setup-input"
+                  placeholder="MSE in Systems Engineering"
+                  style={{ marginTop: 6 }}
+                />
+              )}
             </div>
             <button
               type="button"
@@ -925,22 +968,24 @@ export default function SetupForm() {
                 className="setup-input"
                 placeholder="中国银河证券"
               />
-              <input
-                {...register(`experiences.${idx}.name`)}
-                className="setup-input"
-                placeholder="China Galaxy Securities"
-                onBlur={(e) => {
-                  const cur = watch(`experiences.${idx}.slug`);
-                  if (!cur && e.target.value) {
-                    setValue(
-                      `experiences.${idx}.slug`,
-                      deriveSlug(e.target.value),
-                      { shouldValidate: false }
-                    );
-                  }
-                }}
-                style={{ marginTop: 6 }}
-              />
+              {showEnglish && (
+                <input
+                  {...register(`experiences.${idx}.name`)}
+                  className="setup-input"
+                  placeholder="China Galaxy Securities"
+                  onBlur={(e) => {
+                    const cur = watch(`experiences.${idx}.slug`);
+                    if (!cur && e.target.value) {
+                      setValue(
+                        `experiences.${idx}.slug`,
+                        deriveSlug(e.target.value),
+                        { shouldValidate: false }
+                      );
+                    }
+                  }}
+                  style={{ marginTop: 6 }}
+                />
+              )}
             </div>
             <div>
               <label className="setup-label">职位</label>
@@ -949,12 +994,14 @@ export default function SetupForm() {
                 className="setup-input"
                 placeholder="量化研究实习生"
               />
-              <input
-                {...register(`experiences.${idx}.role`)}
-                className="setup-input"
-                placeholder="Quantitative Research Intern"
-                style={{ marginTop: 6 }}
-              />
+              {showEnglish && (
+                <input
+                  {...register(`experiences.${idx}.role`)}
+                  className="setup-input"
+                  placeholder="Quantitative Research Intern"
+                  style={{ marginTop: 6 }}
+                />
+              )}
             </div>
             <button
               type="button"
