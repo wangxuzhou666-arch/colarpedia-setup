@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSession, signIn, signOut } from "next-auth/react";
 import { setupSchema, deriveSlug } from "../lib/schema";
+import { getFixture } from "../../../lib/demoFixtures";
 import { getSupabaseBrowserClient } from "../../../lib/supabase/client";
 import UploadPanel from "./UploadPanel";
 import PreviewModal from "./PreviewModal";
@@ -270,25 +271,24 @@ export default function SetupForm() {
     }
   }, [nameValue, slugTouched, setValue]);
 
-  // 中国留学生示例（找北美 SDE / MLE 实习）
+  // 中国留学生示例（找北美 SDE / MLE 实习）—— 直接从 demoFixtures 拉完整数据
   const fillStudentExample = () => {
-    setValue("name", "Wang Xue");
-    setValue("name_zh", "王雪");
-    setValue("homepageSlug", "Wang_Xue");
+    const fx = getFixture("wang-xue");
+    if (!fx) return;
+    setValue("name", fx.name);
+    setValue("name_zh", fx.name_zh);
+    setValue("homepageSlug", fx.homepageSlug);
     setSlugTouched(true);
-    setValue("tagline", "MSE Systems Engineering @ UPenn · systems + applied ML · seeking SDE/MLE intern roles");
-    setValue("tagline_zh", "宾大系统工程硕士 · 北大信管本科 · 求北美 SDE / 机器学习系统暑期实习");
-    setValue(
-      "bio",
-      "Wang Xue is a Master of Science in Engineering candidate at the University of Pennsylvania, focusing on systems engineering and applied machine learning. She holds a Bachelor of Science from Peking University in Information Management with a minor in Statistics. She previously interned at China Galaxy Securities as a Quantitative Research Intern, building a Python backtesting framework adopted by three commodity-futures desks, and at Microsoft Research Asia as a Visiting Research Intern under the Systems and Networking group. Her side projects include Quanta CLI, an open-source backtesting harness with ~200 GitHub stars, and Wiki Drift, a Chrome extension surfacing Wikipedia edit history."
-    );
-    setValue(
-      "bio_zh",
-      "王雪是宾夕法尼亚大学系统工程方向的硕士在读生，研究方向涉及系统工程与机器学习系统。本科毕业于北京大学信息管理专业，副修统计学。本科期间在中国银河证券担任量化研究实习生，开发了被三个商品期货策略组共用的 Python 回测框架；研究生暑假在微软亚洲研究院系统与网络组担任访问研究实习生。业余项目包括开源回测工具 Quanta CLI（GitHub 约 200 星）和维基百科编辑历史 Chrome 扩展 Wiki Drift。"
-    );
-    setValue("email", "wangxue@example.com");
-    setValue("linkedin", "linkedin.com/in/wangxue");
-    setValue("githubProfile", "github.com/wangxue");
+    setValue("tagline", fx.tagline);
+    setValue("tagline_zh", fx.tagline_zh);
+    setValue("bio", fx.bio);
+    setValue("bio_zh", fx.bio_zh);
+    setValue("email", fx.email || "");
+    setValue("linkedin", fx.linkedin || "");
+    setValue("githubProfile", fx.githubProfile || "");
+    replaceShippedAndClearThumbs(fx.shipped || []);
+    replaceEdu(fx.educations || []);
+    replaceExp(fx.experiences || []);
   };
 
   // 中国应届本科毕业生示例（求互联网产品 / 运营第一份工作）
@@ -301,7 +301,7 @@ export default function SetupForm() {
     setValue("tagline_zh", "应届毕业生 · 武汉大学信息管理 · 求互联网产品 / 运营岗位");
     setValue(
       "bio",
-      "Chen Si is a 2026 graduate of the School of Information Management at Wuhan University (B.M. Information Management and Information Systems). During her undergrad she completed three internships — community operations at Meituan, product analyst at JD.com, and data operations at a Shanghai-based fintech startup — and led a campus reading-club project that grew to roughly 800 active members. She is currently seeking product or operations roles in Chinese internet companies."
+      "Chen Si is a 2026 graduate of the School of Information Management at Wuhan University (B.M. Information Management and Information Systems). During her undergrad she completed three internships — community operations at Meituan, product analyst at JD, and data operations at a Shanghai-based fintech startup — and led a campus reading-club project that grew to roughly 800 active members. She is currently seeking product or operations roles in Chinese internet companies."
     );
     setValue(
       "bio_zh",
@@ -309,6 +309,88 @@ export default function SetupForm() {
     );
     setValue("email", "chensi@example.com");
     setValue("linkedin", "linkedin.com/in/chensi");
+    setValue("githubProfile", "");
+
+    replaceShippedAndClearThumbs([
+      {
+        name: "Wuhan University Reading Club",
+        name_zh: "武大读书社",
+        slug: "Wuhan_Reading_Club",
+        description: "Student-run reading club, scaled to ~800 active members",
+        description_zh: "学生发起的读书社，运营到约 800 活跃成员",
+        role: "Founder & project lead",
+        role_zh: "发起人 / 项目负责人",
+        date_range: "2024 – 2025",
+        url: "",
+        tech_stack: ["WeChat", "Notion"],
+        body: "Chen Si founded the campus reading club in late 2024 with 12 founding members. By summer 2025 the club had grown to roughly 800 active members across three campuses, organizing weekly book discussions and monthly author Q&A sessions.",
+        body_zh: "陈思 2024 年末发起校读书社，初始 12 人。2025 年夏发展到三校区约 800 活跃成员，每周组织读书讨论、每月组织作者问答。",
+      },
+      {
+        name: "Library Borrowing Data Viz",
+        name_zh: "图书借阅数据可视化",
+        slug: "Library_Data_Viz",
+        description: "Coursework: 3-year visualization of campus library borrowing trends",
+        description_zh: "课程作业：3 年校园图书借阅趋势可视化",
+        role: "Author",
+        role_zh: "作者",
+        date_range: "2025 春",
+        url: "",
+        tech_stack: ["Python", "Pandas", "Streamlit"],
+        body: "A course project for Data Visualization, analyzing three years of anonymized library borrowing logs to identify reading-pattern shifts across departments.",
+        body_zh: "数据可视化课程作业，分析 3 年匿名图书借阅日志，识别各院系阅读偏好的迁移。",
+      },
+    ]);
+
+    replaceEdu([
+      {
+        name: "Wuhan University",
+        name_zh: "武汉大学",
+        slug: "Wuhan_University",
+        degree: "B.M. in Information Management and Information Systems",
+        degree_zh: "信息管理与信息系统学士",
+        date_range: "2022 – 2026",
+        location: "武汉",
+        body: "Chen Si is a 2026 graduate of the School of Information Management at Wuhan University, majoring in Information Management and Information Systems. Her undergraduate coursework spans data management, applied statistics, and user research.",
+        body_zh: "陈思是武汉大学信息管理学院 2026 届毕业生，主修信息管理与信息系统专业。本科课程涉及数据管理、应用统计、用户研究。",
+      },
+    ]);
+
+    replaceExp([
+      {
+        name: "Meituan",
+        name_zh: "美团",
+        slug: "Meituan",
+        role: "Community Operations Intern",
+        role_zh: "社区运营实习生",
+        date_range: "2024 年 6 月 – 9 月",
+        location: "北京",
+        body: "Chen Si interned on the Meituan local-services community operations team during summer 2024. Her main project was the design and rollout of a new contributor-incentive system, which improved weekly active contributor count by 18% during the pilot.",
+        body_zh: "陈思 2024 年暑期在美团本地生活社区运营组实习。主要项目是设计并落地新的内容贡献者激励体系，试点期内周活跃贡献者提升 18%。",
+      },
+      {
+        name: "JD",
+        name_zh: "京东",
+        slug: "JD",
+        role: "Product Analyst Intern",
+        role_zh: "产品分析实习生",
+        date_range: "2025 年 1 月 – 4 月",
+        location: "北京",
+        body: "Chen Si interned as a product analyst on JD's home-appliance category team during winter–spring 2025. She was responsible for weekly category-performance dashboards and ad-hoc cohort analyses supporting two PMs.",
+        body_zh: "陈思 2025 年冬春在京东家电品类组担任产品分析实习生。负责品类周报、cohort 分析等支持两名 PM 的决策。",
+      },
+      {
+        name: "Lingxi Fintech",
+        name_zh: "灵犀金融科技",
+        slug: "Lingxi_Fintech",
+        role: "Data Operations Intern",
+        role_zh: "数据运营实习生",
+        date_range: "2025 年 6 月 – 9 月",
+        location: "上海",
+        body: "Chen Si interned at Lingxi, a Shanghai-based fintech startup serving SME loan operations, where she built customer-funnel reporting and led the migration of operational dashboards from Excel to Metabase.",
+        body_zh: "陈思 2025 年暑期在灵犀（上海某金融科技初创，服务中小企业信贷运营）担任数据运营实习生，搭建客户漏斗看板，主导运营看板从 Excel 迁移到 Metabase。",
+      },
+    ]);
   };
 
   const setThumbError = (idx, msg) => {
