@@ -64,9 +64,8 @@ export default async function SetupPage() {
         </p>
 
         <p className="setup-intro">
-          下面填一份表单，我们会帮你生成一个像维基百科一样的个人主页，
-          可以放进 LinkedIn、小红书简介、求职简历里。
-          简历内容会用于自动生成你的 wiki，不在我们这边长期保存。
+          基于上传的简历自动生成维基风格个人主页。
+          简历内容仅用于本次生成，不留存。
         </p>
 
         <p className="setup-meta">
