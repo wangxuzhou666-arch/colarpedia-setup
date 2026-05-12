@@ -493,8 +493,7 @@ export default function SetupForm() {
         第二步 · 核对并编辑信息
       </h2>
       <p className="setup-help" style={{ marginTop: -8, marginBottom: 14 }}>
-        已经把识别到的内容填到下面表单里，看一眼有没有错漏。
-        所有英文版字段都是<strong>选填</strong>——只填中文也能上线。
+        英文字段均为选填，仅填中文即可上线。
       </p>
 
       {/* 个人信息 */}
@@ -518,8 +517,7 @@ export default function SetupForm() {
             placeholder="Wang Xue"
           />
           <div className="setup-help">
-            会被用作你 wiki 页面的链接（如 yoursite.com/wiki/Wang_Xue/）。
-            没有英文名也可以填拼音。
+            用于页面链接（/wiki/Wang_Xue/），可填拼音。
           </div>
           {errors.name && (
             <div className="setup-error">{errors.name.message}</div>
@@ -544,8 +542,7 @@ export default function SetupForm() {
             placeholder="用第三人称写几段话介绍你自己，像维基百科一样。例如：王雪是宾夕法尼亚大学系统工程方向的硕士在读生..."
           />
           <div className="setup-help">
-            建议用<strong>第三人称</strong>（"王雪是..." 而不是 "我是..."），更像维基百科风格。
-            不会写？没关系，先随便写两句，之后可以让我们帮你润色。
+            用<strong>第三人称</strong>撰写（例："王雪是..."），更像维基百科风格。
           </div>
         </div>
 
@@ -579,7 +576,7 @@ export default function SetupForm() {
             </div>
           </div>
           <div className="setup-help">
-            建议方形头像（600×600 以上）。JPG / PNG / WebP，最大 3 MB。
+            方形，≥600×600，JPG/PNG/WebP，≤3 MB。
           </div>
           {photoError && <div className="setup-error">{photoError}</div>}
         </div>
@@ -630,7 +627,7 @@ export default function SetupForm() {
             placeholder="linkedin.com/in/wangxue"
           />
           <div className="setup-help">
-            粘贴你的领英主页链接，或直接填路径，不需要 https://。
+            粘贴链接或路径，无需 https://。
           </div>
           {errors.linkedin && (
             <div className="setup-error">{errors.linkedin.message}</div>
@@ -652,11 +649,7 @@ export default function SetupForm() {
 
       {/* 项目作品 */}
       <div className="setup-section">
-        <h3 className="setup-section-heading">项目作品（选填）</h3>
-        <div className="setup-help" style={{ marginTop: -8, marginBottom: 12 }}>
-          课程作业、GitHub 仓库、个人项目、参与过的产品都算。
-          每个项目会单独生成一个 wiki 页面。
-        </div>
+        <h3 className="setup-section-heading">项目作品（选填，每个生成独立 wiki 页）</h3>
 
         {fields.map((field, idx) => {
           const thumb = projectThumbs[idx];
@@ -729,8 +722,7 @@ export default function SetupForm() {
                     </button>
                   )}
                   <div className="setup-help">
-                    <strong>图片</strong>（JPG / PNG / WebP，最大 3 MB）会显示在项目右侧。
-                    <strong>PDF</strong>（最大 10 MB）会显示为可下载的文档链接。
+                    图片 ≤3 MB 显示在右侧；PDF ≤10 MB 显示为下载链接。
                   </div>
                   {thumbErr && (
                     <div className="setup-error">{thumbErr}</div>
@@ -819,11 +811,7 @@ export default function SetupForm() {
 
       {/* 教育经历 */}
       <div className="setup-section">
-        <h3 className="setup-section-heading">教育经历（选填）</h3>
-        <div className="setup-help" style={{ marginTop: -8, marginBottom: 12 }}>
-          每段经历会生成一个学校的 wiki 页面。详情可以从你的简历自动填，
-          也可以手动写。
-        </div>
+        <h3 className="setup-section-heading">教育经历（选填，每段生成学校独立 wiki 页）</h3>
         {eduFields.map((field, idx) => (
           <div key={field.id} className="setup-array-row">
             <div>
@@ -836,7 +824,7 @@ export default function SetupForm() {
               <input
                 {...register(`educations.${idx}.name`)}
                 className="setup-input"
-                placeholder="University of Pennsylvania（英文，选填）"
+                placeholder="University of Pennsylvania"
                 onBlur={(e) => {
                   const cur = watch(`educations.${idx}.slug`);
                   if (!cur && e.target.value) {
@@ -860,7 +848,7 @@ export default function SetupForm() {
               <input
                 {...register(`educations.${idx}.degree`)}
                 className="setup-input"
-                placeholder="MSE in Systems Engineering（英文，选填）"
+                placeholder="MSE in Systems Engineering"
                 style={{ marginTop: 6 }}
               />
             </div>
@@ -927,10 +915,7 @@ export default function SetupForm() {
 
       {/* 工作经历 */}
       <div className="setup-section">
-        <h3 className="setup-section-heading">工作经历（选填）</h3>
-        <div className="setup-help" style={{ marginTop: -8, marginBottom: 12 }}>
-          每段经历会生成一个公司的 wiki 页面（公司介绍 + 你担任的角色）。
-        </div>
+        <h3 className="setup-section-heading">工作经历（选填，每段生成公司独立 wiki 页）</h3>
         {expFields.map((field, idx) => (
           <div key={field.id} className="setup-array-row">
             <div>
@@ -943,7 +928,7 @@ export default function SetupForm() {
               <input
                 {...register(`experiences.${idx}.name`)}
                 className="setup-input"
-                placeholder="China Galaxy Securities（英文，选填）"
+                placeholder="China Galaxy Securities"
                 onBlur={(e) => {
                   const cur = watch(`experiences.${idx}.slug`);
                   if (!cur && e.target.value) {
@@ -967,7 +952,7 @@ export default function SetupForm() {
               <input
                 {...register(`experiences.${idx}.role`)}
                 className="setup-input"
-                placeholder="Quantitative Research Intern（英文，选填）"
+                placeholder="Quantitative Research Intern"
                 style={{ marginTop: 6 }}
               />
             </div>
@@ -1037,7 +1022,7 @@ export default function SetupForm() {
         <summary>
           <span className="setup-advanced-title">高级设置（一般不用动）</span>
           <span className="setup-advanced-hint">
-            站点名称 · GitHub 仓库名 · 站点域名 —— 上线后想换再来改
+            站点名称 · 仓库名 · 域名（可后改）
           </span>
         </summary>
 
@@ -1049,7 +1034,7 @@ export default function SetupForm() {
             placeholder="Yourpedia"
           />
           <div className="setup-help">
-            显示在你网站顶部的名字（默认是 "Yourpedia"，可以改成 "Wangpedia" 之类的）。
+            显示在网站顶部，如 "Wangpedia"。
           </div>
           {errors.siteName && (
             <div className="setup-error">{errors.siteName.message}</div>
@@ -1068,8 +1053,7 @@ export default function SetupForm() {
             placeholder="Wang_Xue"
           />
           <div className="setup-help">
-            你 wiki 主页的 URL 后缀（例如 /wiki/Wang_Xue/）。
-            会从英文姓名自动生成，一般不用改。
+            主页 URL 后缀（/wiki/Wang_Xue/），自动生成。
           </div>
           {errors.homepageSlug && (
             <div className="setup-error">{errors.homepageSlug.message}</div>
@@ -1084,8 +1068,7 @@ export default function SetupForm() {
             placeholder="your-site.vercel.app"
           />
           <div className="setup-help">
-            上线后 Vercel 给你的网址（如 wangxue.vercel.app）。
-            没上线前先空着，上线之后回来改。
+            上线后的网址（如 wangxue.vercel.app），未上线可留空。
           </div>
           {errors.metaBaseUrl && (
             <div className="setup-error">{errors.metaBaseUrl.message}</div>
@@ -1111,8 +1094,7 @@ export default function SetupForm() {
           </div>
         </div>
         <div className="setup-help">
-          这两个会用在 wiki 页面顶部的 "查看源代码 / 历史" 链接里。
-          上线后再回来填。
+          用于页面顶部 "查看源代码 / 历史" 链接，上线后再填。
         </div>
       </details>
 
