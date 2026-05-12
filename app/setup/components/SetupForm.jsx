@@ -274,7 +274,9 @@ export default function SetupForm() {
   // 中国留学生示例（找北美 SDE / MLE 实习）—— 直接从 demoFixtures 拉完整数据
   // strip 掉非 schema 字段（logo / logo_caption / portrait 等）避免 react-hook-form replace 出错
   const fillStudentExample = () => {
+    console.log("[fillStudentExample] CLICK FIRED");
     const fx = getFixture("wang-xue");
+    console.log("[fillStudentExample] fx loaded:", !!fx, "shipped:", fx?.shipped?.length, "edu:", fx?.educations?.length, "exp:", fx?.experiences?.length);
     if (!fx) {
       console.error("[fillStudentExample] getFixture('wang-xue') returned null");
       return;
@@ -327,9 +329,20 @@ export default function SetupForm() {
     setValue("email", fx.email || "");
     setValue("linkedin", fx.linkedin || "");
     setValue("githubProfile", fx.githubProfile || "");
-    replaceShippedAndClearThumbs((fx.shipped || []).map(pickShipped));
-    replaceEdu((fx.educations || []).map(pickEdu));
-    replaceExp((fx.experiences || []).map(pickExp));
+    try {
+      const shippedClean = (fx.shipped || []).map(pickShipped);
+      const eduClean = (fx.educations || []).map(pickEdu);
+      const expClean = (fx.experiences || []).map(pickExp);
+      console.log("[fillStudentExample] cleaned: shipped=", shippedClean.length, "edu=", eduClean.length, "exp=", expClean.length);
+      replaceShippedAndClearThumbs(shippedClean);
+      console.log("[fillStudentExample] replaceShipped DONE");
+      replaceEdu(eduClean);
+      console.log("[fillStudentExample] replaceEdu DONE");
+      replaceExp(expClean);
+      console.log("[fillStudentExample] replaceExp DONE — all sections populated");
+    } catch (e) {
+      console.error("[fillStudentExample] EXCEPTION during replace:", e);
+    }
   };
 
   // 中国应届本科毕业生示例（求互联网产品 / 运营第一份工作）
