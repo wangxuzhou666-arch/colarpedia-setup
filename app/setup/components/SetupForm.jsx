@@ -274,6 +274,7 @@ export default function SetupForm() {
   // 中国留学生示例（找北美 SDE / MLE 实习）—— 直接从 demoFixtures 拉完整数据
   // strip 掉非 schema 字段（logo / logo_caption / portrait 等）避免 react-hook-form replace 出错
   const fillStudentExample = () => {
+    if (typeof window !== "undefined") window.alert("[DEBUG] 中国留学生 button clicked");
     console.log("[fillStudentExample] CLICK FIRED");
     const fx = getFixture("wang-xue");
     console.log("[fillStudentExample] fx loaded:", !!fx, "shipped:", fx?.shipped?.length, "edu:", fx?.educations?.length, "exp:", fx?.experiences?.length);
