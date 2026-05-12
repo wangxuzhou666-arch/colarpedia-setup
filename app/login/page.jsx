@@ -138,13 +138,27 @@ function LoginInner() {
                 value={code}
                 onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                 className="setup-input"
-                placeholder="填邮件里的 6 位数字"
+                placeholder="6 位验证码"
                 inputMode="numeric"
                 autoComplete="one-time-code"
                 maxLength={6}
                 disabled={verifying}
-                style={{ letterSpacing: "4px", fontFamily: "monospace", fontSize: "18px" }}
+                style={
+                  code.length > 0
+                    ? {
+                        letterSpacing: "8px",
+                        fontFamily:
+                          "ui-monospace, SFMono-Regular, Menlo, monospace",
+                        fontSize: "22px",
+                        fontWeight: 600,
+                        textAlign: "center",
+                      }
+                    : { fontSize: "16px" }
+                }
               />
+              <div className="setup-help">
+                从邮件里复制粘贴最快。
+              </div>
             </div>
             {error && <div className="setup-error">{error}</div>}
             <button
