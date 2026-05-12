@@ -270,45 +270,45 @@ export default function SetupForm() {
     }
   }, [nameValue, slugTouched, setValue]);
 
-  // 中国留学生示例（找北美 SDE 实习）
+  // 中国留学生示例（找北美 SDE / MLE 实习）
   const fillStudentExample = () => {
     setValue("name", "Wang Xue");
     setValue("name_zh", "王雪");
     setValue("homepageSlug", "Wang_Xue");
     setSlugTouched(true);
-    setValue("tagline", "Software engineer · UPenn MS · interested in AI tooling");
-    setValue("tagline_zh", "软件工程师 · 宾大硕士在读 · 对 AI 工具方向感兴趣");
+    setValue("tagline", "MSE Systems Engineering @ UPenn · systems + applied ML · seeking SDE/MLE intern roles");
+    setValue("tagline_zh", "宾大系统工程硕士 · 北大信管本科 · 求北美 SDE / 机器学习系统暑期实习");
     setValue(
       "bio",
-      "Wang Xue is a Master of Science in Engineering candidate at the University of Pennsylvania, focusing on systems engineering and AI applications. She previously interned at China Galaxy Securities as a quantitative research intern, where she built backtesting tooling for futures strategies."
+      "Wang Xue is a Master of Science in Engineering candidate at the University of Pennsylvania, focusing on systems engineering and applied machine learning. She holds a Bachelor of Science from Peking University in Information Management with a minor in Statistics. She previously interned at China Galaxy Securities as a Quantitative Research Intern, building a Python backtesting framework adopted by three commodity-futures desks, and at Microsoft Research Asia as a Visiting Research Intern under the Systems and Networking group. Her side projects include Quanta CLI, an open-source backtesting harness with ~200 GitHub stars, and Wiki Drift, a Chrome extension surfacing Wikipedia edit history."
     );
     setValue(
       "bio_zh",
-      "王雪是宾夕法尼亚大学系统工程方向的硕士在读生，研究方向涉及系统工程与 AI 应用。本科期间曾在中国银河证券担任量化研究实习生，主要负责期货策略回测工具的开发。"
+      "王雪是宾夕法尼亚大学系统工程方向的硕士在读生，研究方向涉及系统工程与机器学习系统。本科毕业于北京大学信息管理专业，副修统计学。本科期间在中国银河证券担任量化研究实习生，开发了被三个商品期货策略组共用的 Python 回测框架；研究生暑假在微软亚洲研究院系统与网络组担任访问研究实习生。业余项目包括开源回测工具 Quanta CLI（GitHub 约 200 星）和维基百科编辑历史 Chrome 扩展 Wiki Drift。"
     );
     setValue("email", "wangxue@example.com");
     setValue("linkedin", "linkedin.com/in/wangxue");
     setValue("githubProfile", "github.com/wangxue");
   };
 
-  // 中国转行老师示例
-  const fillTeacherExample = () => {
-    setValue("name", "Wang Wei");
-    setValue("name_zh", "王伟");
-    setValue("homepageSlug", "Wang_Wei");
+  // 中国应届本科毕业生示例（求互联网产品 / 运营第一份工作）
+  const fillFreshGradExample = () => {
+    setValue("name", "Chen Si");
+    setValue("name_zh", "陈思");
+    setValue("homepageSlug", "Chen_Si");
     setSlugTouched(true);
-    setValue("tagline", "Educator turned product builder · 8 years of teaching · interested in EdTech");
-    setValue("tagline_zh", "高校讲师 · 8 年教学经验 · 正在转型教育科技产品");
+    setValue("tagline", "Recent grad · Information Management @ Wuhan University · seeking product/operations roles");
+    setValue("tagline_zh", "应届毕业生 · 武汉大学信息管理 · 求互联网产品 / 运营岗位");
     setValue(
       "bio",
-      "Wang Wei is a lecturer at a 985 university with 8 years of teaching experience and 12 published papers. He is currently transitioning into product management, with a focus on education technology."
+      "Chen Si is a 2026 graduate of the School of Information Management at Wuhan University (B.M. Information Management and Information Systems). During her undergrad she completed three internships — community operations at Meituan, product analyst at JD.com, and data operations at a Shanghai-based fintech startup — and led a campus reading-club project that grew to roughly 800 active members. She is currently seeking product or operations roles in Chinese internet companies."
     );
     setValue(
       "bio_zh",
-      "王伟是某 985 高校讲师，从事教学工作 8 年，发表论文 12 篇。曾创办教育 SaaS 创业项目（已退出），目前正在向互联网产品方向转型，关注教育科技领域。"
+      "陈思是武汉大学信息管理学院 2026 届毕业生（信息管理与信息系统专业，学士）。本科期间在三家公司实习：美团社区运营、京东产品分析、上海某金融科技初创公司数据运营，并担任校读书社项目负责人（运营到约 800 活跃成员）。目前正在求互联网公司产品 / 运营岗位。"
     );
-    setValue("email", "wangwei@example.com");
-    setValue("linkedin", "linkedin.com/in/wangwei");
+    setValue("email", "chensi@example.com");
+    setValue("linkedin", "linkedin.com/in/chensi");
   };
 
   const setThumbError = (idx, msg) => {
@@ -563,11 +563,11 @@ export default function SetupForm() {
         </button>
         <button
           type="button"
-          onClick={fillTeacherExample}
+          onClick={fillFreshGradExample}
           className="setup-button"
           style={{ marginLeft: 8 }}
         >
-          填入「中国教师转行」示例
+          填入「中国应届毕业生」示例
         </button>
       </div>
 
@@ -649,7 +649,7 @@ export default function SetupForm() {
             id="field-tagline-zh"
             {...register("tagline_zh")}
             className="setup-input"
-            placeholder="软件工程师 · 宾大硕士在读 · 关注 AI 工具方向"
+            placeholder="软件工程师 · 宾大硕士在读 · 关注开发者工具方向"
           />
         </div>
 
