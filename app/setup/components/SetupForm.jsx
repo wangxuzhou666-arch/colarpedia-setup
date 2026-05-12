@@ -2,7 +2,7 @@
 
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSession, signIn, signOut } from "next-auth/react";
 import { setupSchema, deriveSlug } from "../lib/schema";
 import { getSupabaseBrowserClient } from "../../../lib/supabase/client";
@@ -181,6 +181,51 @@ export default function SetupForm() {
 
   const nameValue = watch("name");
   const [slugTouched, setSlugTouched] = useState(false);
+
+  // 折叠 section 的摘要行 — 用于 details summary 显示"已填了什么"
+  const emailValue = watch("email");
+  const linkedinValue = watch("linkedin");
+  const githubProfileValue = watch("githubProfile");
+  const shippedValues = watch("shipped");
+  const educationsValues = watch("educations");
+  const experiencesValues = watch("experiences");
+
+  const contactSummary = useMemo(() => {
+    const parts = [];
+    if (emailValue) parts.push("邮箱");
+    if (linkedinValue) parts.push("LinkedIn");
+    if (githubProfileValue) parts.push("GitHub");
+    return parts.length ? parts.join(" · ") : "未填";
+  }, [emailValue, linkedinValue, githubProfileValue]);
+
+  const arraySummary = (items, nameKeys) => {
+    if (!items || items.length === 0) return "未添加";
+    const names = items
+      .map((item) => {
+        for (const key of nameKeys) {
+          if (item?.[key]) return item[key];
+        }
+        return null;
+      })
+      .filter(Boolean);
+    if (names.length === 0) return `${items.length} 项`;
+    const shown = names.slice(0, 3).join(" / ");
+    const more = names.length > 3 ? "…" : "";
+    return `${items.length} 项：${shown}${more}`;
+  };
+
+  const projectsSummary = useMemo(
+    () => arraySummary(shippedValues, ["name_zh", "name"]),
+    [shippedValues]
+  );
+  const educationsSummary = useMemo(
+    () => arraySummary(educationsValues, ["name_zh", "name"]),
+    [educationsValues]
+  );
+  const experiencesSummary = useMemo(
+    () => arraySummary(experiencesValues, ["name_zh", "name"]),
+    [experiencesValues]
+  );
   useEffect(() => {
     if (!slugTouched && nameValue) {
       setValue("homepageSlug", deriveSlug(nameValue), {
@@ -639,8 +684,24 @@ export default function SetupForm() {
       </div>
 
       {/* 联系方式 */}
-      <div className="setup-section">
-        <h3 className="setup-section-heading">联系方式（选填，建议至少留一个）</h3>
+      <details className="setup-section">
+        <summary style={{ cursor: "pointer", padding: "4px 0" }}>
+          <h3
+            className="setup-section-heading"
+            style={{ display: "inline", margin: 0, marginRight: 8 }}
+          >
+            联系方式（选填，建议至少留一个）
+          </h3>
+          <span
+            style={{
+              fontSize: "0.9em",
+              color: "var(--wiki-text-soft)",
+              fontWeight: "normal",
+            }}
+          >
+            · {contactSummary}
+          </span>
+        </summary>
 
         <div className="setup-field">
           <label className="setup-label">邮箱</label>
@@ -680,11 +741,27 @@ export default function SetupForm() {
             <div className="setup-error">{errors.githubProfile.message}</div>
           )}
         </div>
-      </div>
+      </details>
 
       {/* 项目作品 */}
-      <div className="setup-section">
-        <h3 className="setup-section-heading">项目作品（选填，每个生成独立 wiki 页）</h3>
+      <details className="setup-section">
+        <summary style={{ cursor: "pointer", padding: "4px 0" }}>
+          <h3
+            className="setup-section-heading"
+            style={{ display: "inline", margin: 0, marginRight: 8 }}
+          >
+            项目作品（选填，每个生成独立 wiki 页）
+          </h3>
+          <span
+            style={{
+              fontSize: "0.9em",
+              color: "var(--wiki-text-soft)",
+              fontWeight: "normal",
+            }}
+          >
+            · {projectsSummary}
+          </span>
+        </summary>
 
         {fields.map((field, idx) => {
           const thumb = projectThumbs[idx];
@@ -846,11 +923,27 @@ export default function SetupForm() {
         >
           + 添加一个项目
         </button>
-      </div>
+      </details>
 
       {/* 教育经历 */}
-      <div className="setup-section">
-        <h3 className="setup-section-heading">教育经历（选填，每段生成学校独立 wiki 页）</h3>
+      <details className="setup-section">
+        <summary style={{ cursor: "pointer", padding: "4px 0" }}>
+          <h3
+            className="setup-section-heading"
+            style={{ display: "inline", margin: 0, marginRight: 8 }}
+          >
+            教育经历（选填，每段生成学校独立 wiki 页）
+          </h3>
+          <span
+            style={{
+              fontSize: "0.9em",
+              color: "var(--wiki-text-soft)",
+              fontWeight: "normal",
+            }}
+          >
+            · {educationsSummary}
+          </span>
+        </summary>
         {eduFields.map((field, idx) => (
           <div key={field.id} className="setup-array-row">
             <div>
@@ -954,11 +1047,27 @@ export default function SetupForm() {
         >
           + 添加一段教育经历
         </button>
-      </div>
+      </details>
 
       {/* 工作经历 */}
-      <div className="setup-section">
-        <h3 className="setup-section-heading">工作经历（选填，每段生成公司独立 wiki 页）</h3>
+      <details className="setup-section">
+        <summary style={{ cursor: "pointer", padding: "4px 0" }}>
+          <h3
+            className="setup-section-heading"
+            style={{ display: "inline", margin: 0, marginRight: 8 }}
+          >
+            工作经历（选填，每段生成公司独立 wiki 页）
+          </h3>
+          <span
+            style={{
+              fontSize: "0.9em",
+              color: "var(--wiki-text-soft)",
+              fontWeight: "normal",
+            }}
+          >
+            · {experiencesSummary}
+          </span>
+        </summary>
         {expFields.map((field, idx) => (
           <div key={field.id} className="setup-array-row">
             <div>
@@ -1062,7 +1171,7 @@ export default function SetupForm() {
         >
           + 添加一段工作经历
         </button>
-      </div>
+      </details>
 
       {/* 高级设置——已 deploy 后再回来填 */}
       <details className="setup-advanced">
