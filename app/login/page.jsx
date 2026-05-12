@@ -4,7 +4,7 @@
 // 回到 /auth/callback 完成 session 建立 → 跳转到 next 参数指定的页面（默认 /setup）。
 
 import { Suspense, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { getSupabaseBrowserClient } from "../../lib/supabase/client";
 
 export default function LoginPage() {
@@ -38,6 +38,7 @@ function LoginShell({ children }) {
 }
 
 function LoginInner() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get("next") || "/setup";
   const presetError = searchParams.get("error") || "";
@@ -45,6 +46,8 @@ function LoginInner() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(presetError);
   const [sent, setSent] = useState(false);
+  const [code, setCode] = useState("");
+  const [verifying, setVerifying] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -72,29 +75,88 @@ function LoginInner() {
     }
   };
 
+  // 跨设备 fallback：用户在邮件里复制 6 位 token，回原始设备粘贴 → 走 token verify
+  // 不依赖 PKCE code_verifier（cookie 是 device-bound 的），所以跨设备可用
+  const handleVerifyOtp = async (e) => {
+    e.preventDefault();
+    const token = code.trim();
+    if (!/^\d{6}$/.test(token)) {
+      setError("验证码是 6 位数字");
+      return;
+    }
+    setVerifying(true);
+    setError("");
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const { error: verifyError } = await supabase.auth.verifyOtp({
+        email: email.trim(),
+        token,
+        type: "email",
+      });
+      if (verifyError) throw verifyError;
+      router.replace(next);
+    } catch (err) {
+      setError(humanizeAuthError(err.message));
+    } finally {
+      setVerifying(false);
+    }
+  };
+
   return (
     <LoginShell>
       {sent ? (
-        <div className="upload-info" style={{ marginTop: 24, padding: 16 }}>
-          已经给 <strong>{email}</strong> 发了一封登录邮件。
-          <br />
-          打开邮箱点里面的链接就能登录（链接 1 小时内有效）。
-          <div style={{ marginTop: 10, fontSize: "0.9em", color: "var(--wiki-text-soft)" }}>
-            没收到？看下垃圾邮件 / 推广邮件文件夹，或{" "}
-            <button
-              type="button"
-              onClick={() => {
-                setSent(false);
-                setEmail("");
-              }}
-              className="deploy-card-link"
-              style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}
-            >
-              重发一封
-            </button>
-            。
+        <>
+          <div className="upload-info" style={{ marginTop: 24, padding: 16 }}>
+            已经给 <strong>{email}</strong> 发了一封登录邮件。
+            <br />
+            <strong>同一设备收的邮件</strong>：直接点邮件里的链接登录。
+            <br />
+            <strong>不同设备</strong>（比如手机收邮件，电脑登录）：用邮件里的 6 位验证码，填到下面。
+            <div style={{ marginTop: 10, fontSize: "0.9em", color: "var(--wiki-text-soft)" }}>
+              没收到？看下垃圾邮件 / 推广邮件文件夹，或{" "}
+              <button
+                type="button"
+                onClick={() => {
+                  setSent(false);
+                  setEmail("");
+                  setCode("");
+                  setError("");
+                }}
+                className="deploy-card-link"
+                style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}
+              >
+                重发一封
+              </button>
+              。
+            </div>
           </div>
-        </div>
+          <form onSubmit={handleVerifyOtp} style={{ marginTop: 16 }}>
+            <div className="setup-field">
+              <label className="setup-label">6 位验证码</label>
+              <input
+                type="text"
+                value={code}
+                onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                className="setup-input"
+                placeholder="填邮件里的 6 位数字"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                maxLength={6}
+                disabled={verifying}
+                style={{ letterSpacing: "4px", fontFamily: "monospace", fontSize: "18px" }}
+              />
+            </div>
+            {error && <div className="setup-error">{error}</div>}
+            <button
+              type="submit"
+              disabled={verifying || code.length !== 6}
+              className="setup-button-primary"
+              style={{ marginTop: 16 }}
+            >
+              {verifying ? "正在登录…" : "验证并登录"}
+            </button>
+          </form>
+        </>
       ) : (
         <form onSubmit={handleSubmit} style={{ marginTop: 24 }}>
           <div className="setup-field">
@@ -136,6 +198,12 @@ function humanizeAuthError(msg) {
   }
   if (/invalid email/i.test(m)) {
     return "邮箱格式不对，再检查一下。";
+  }
+  if (/expired|expir/i.test(m)) {
+    return "验证码过期了，点上面「重发一封」拿新的。";
+  }
+  if (/token|otp|invalid/i.test(m)) {
+    return "验证码不对，再检查一下，或点「重发一封」。";
   }
   if (/network|fetch/i.test(m)) {
     return "网络请求失败，过几秒再试。";
