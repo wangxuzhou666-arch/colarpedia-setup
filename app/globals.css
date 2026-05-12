@@ -847,31 +847,85 @@ ol.references li { margin-bottom: 4px; }
 
 /* ===== Advanced (collapsed) section ===== */
 
+/* ===== 统一 details/summary 折叠样式 =====
+   覆盖：4 个 secondary section（details.setup-section）+ 高级设置（details.setup-advanced）。
+   走维基 zh 视觉契约：[展开] / [收起] 文字 marker（不用三角，避免文件系统语义干扰），
+   marker 右对齐，hover 整行浅底，open/closed 文字切换。 */
+details.setup-section,
+.setup-advanced {
+  /* details 容器本身：让 summary 撑满 + 收起态零额外间距 */
+}
+
+details.setup-section > summary,
+.setup-advanced > summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 6px 4px;
+  margin: 0 -4px;
+  border-radius: 2px;
+  user-select: none;
+  transition: background-color 0.12s ease;
+}
+
+details.setup-section > summary::-webkit-details-marker,
+.setup-advanced > summary::-webkit-details-marker {
+  display: none;
+}
+
+/* 文字 marker：closed = [展开]，open = [收起]，右对齐 */
+details.setup-section > summary::after,
+.setup-advanced > summary::after {
+  content: "[展开]";
+  margin-left: auto;
+  font-size: 0.85em;
+  font-weight: normal;
+  color: var(--wiki-link);
+  white-space: nowrap;
+}
+details.setup-section[open] > summary::after,
+.setup-advanced[open] > summary::after {
+  content: "[收起]";
+  color: var(--wiki-text-soft);
+}
+
+/* hover：整行浅底 + marker 下划线（维基链接 affordance） */
+details.setup-section > summary:hover,
+.setup-advanced > summary:hover {
+  background: var(--wiki-link-hover-bg);
+}
+details.setup-section > summary:hover::after,
+.setup-advanced > summary:hover::after {
+  text-decoration: underline;
+}
+
+/* 键盘焦点 */
+details.setup-section > summary:focus-visible,
+.setup-advanced > summary:focus-visible {
+  outline: 2px solid var(--wiki-link);
+  outline-offset: -2px;
+}
+
+/* summary 内 H3 inline 行为（让标题与摘要、marker 同行） */
+details.setup-section > summary > .setup-section-heading,
+.setup-advanced > summary > .setup-section-heading {
+  display: inline;
+  margin: 0;
+}
+
+/* 高级设置容器 — 保留顶部分割线 + open 后底部 padding */
 .setup-advanced {
   border-top: 1px solid var(--wiki-border-light);
   padding: 14px 0 4px;
   margin-top: 24px;
 }
-.setup-advanced > summary {
-  cursor: pointer;
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 4px 0;
-  user-select: none;
+.setup-advanced[open] {
+  padding-bottom: 14px;
 }
-.setup-advanced > summary::-webkit-details-marker { display: none; }
-.setup-advanced > summary::before {
-  content: "\25B8";  /* ▸ */
-  display: inline-block;
-  width: 14px;
-  color: var(--wiki-text-soft);
-  transition: transform 0.15s ease;
-}
-.setup-advanced[open] > summary::before {
-  transform: rotate(90deg);
-}
+
+/* 高级设置标题样式（独立于 setup-section-heading） */
 .setup-advanced-title {
   display: inline;
   font-family: var(--font-serif);
@@ -880,21 +934,19 @@ ol.references li { margin-bottom: 4px; }
   color: var(--wiki-text);
 }
 .setup-advanced-hint {
-  display: block;
+  display: inline;
   font-family: var(--font-sans);
   font-size: 12px;
   color: var(--wiki-text-soft);
-  margin-left: 18px;
+  margin-left: 8px;
   line-height: 1.45;
+  font-weight: normal;
 }
 .setup-advanced-hint code {
   font-family: var(--font-mono);
   font-size: 11px;
   background: var(--wiki-bg-alt);
   padding: 0 3px;
-}
-.setup-advanced[open] {
-  padding-bottom: 14px;
 }
 
 /* ===== Preview modal ===== */

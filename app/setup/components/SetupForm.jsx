@@ -685,11 +685,8 @@ export default function SetupForm() {
 
       {/* 联系方式 */}
       <details className="setup-section">
-        <summary style={{ cursor: "pointer", padding: "4px 0" }}>
-          <h3
-            className="setup-section-heading"
-            style={{ display: "inline", margin: 0, marginRight: 8 }}
-          >
+        <summary>
+          <h3 className="setup-section-heading">
             联系方式（选填，建议至少留一个）
           </h3>
           <span
@@ -745,11 +742,8 @@ export default function SetupForm() {
 
       {/* 项目作品 */}
       <details className="setup-section">
-        <summary style={{ cursor: "pointer", padding: "4px 0" }}>
-          <h3
-            className="setup-section-heading"
-            style={{ display: "inline", margin: 0, marginRight: 8 }}
-          >
+        <summary>
+          <h3 className="setup-section-heading">
             项目作品（选填，每个生成独立 wiki 页）
           </h3>
           <span
@@ -927,11 +921,8 @@ export default function SetupForm() {
 
       {/* 教育经历 */}
       <details className="setup-section">
-        <summary style={{ cursor: "pointer", padding: "4px 0" }}>
-          <h3
-            className="setup-section-heading"
-            style={{ display: "inline", margin: 0, marginRight: 8 }}
-          >
+        <summary>
+          <h3 className="setup-section-heading">
             教育经历（选填，每段生成学校独立 wiki 页）
           </h3>
           <span
@@ -1051,11 +1042,8 @@ export default function SetupForm() {
 
       {/* 工作经历 */}
       <details className="setup-section">
-        <summary style={{ cursor: "pointer", padding: "4px 0" }}>
-          <h3
-            className="setup-section-heading"
-            style={{ display: "inline", margin: 0, marginRight: 8 }}
-          >
+        <summary>
+          <h3 className="setup-section-heading">
             工作经历（选填，每段生成公司独立 wiki 页）
           </h3>
           <span
