@@ -29,7 +29,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       clientSecret: process.env.GITHUB_CLIENT_SECRET,
       // public_repo: minimum scope to fork the template + commit
       // wiki content into a *public* repo on the user's account.
-      // Yourpedia is a public-personal-wiki tool by design — we
+      // Workplay is a public-personal-wiki tool by design — we
       // intentionally don't ask for the broader `repo` scope so
       // the user can't accidentally grant us access to their
       // private repos.

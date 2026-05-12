@@ -21,7 +21,7 @@ function LoginShell({ children }) {
       <div className="wiki-topbar">
         <div className="wiki-topbar-inner">
           <a href="/" className="wiki-logo">
-            Yourpedia
+            Workplay
             <span>把你的简历变成像维基百科的个人主页</span>
           </a>
         </div>

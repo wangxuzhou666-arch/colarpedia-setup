@@ -19,9 +19,9 @@ export async function generateMetadata({ params, searchParams }) {
   const sp = (await searchParams) || {};
   const lang = safeLang(sp.lang);
   const fx = getFixture(fixtureName);
-  if (!fx) return { title: "Yourpedia · 示例不存在" };
+  if (!fx) return { title: "Workplay · 示例不存在" };
   const resolved = resolveEntity(fx.data, entitySlug);
-  if (!resolved) return { title: "Yourpedia · 页面不存在" };
+  if (!resolved) return { title: "Workplay · 页面不存在" };
   if (resolved.kind === "bio") {
     return { title: `${fx.data.name} — ${fx.data.siteName}（示例）` };
   }

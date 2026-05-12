@@ -1,10 +1,10 @@
--- Yourpedia · M2 初始 schema
+-- Workplay · M2 初始 schema
 --
 -- 表结构：
 --   profiles  : 跟 auth.users 1:1，存非敏感的展示信息（email 镜像、created_at）
 --   sites     : 用户的 wiki 站点。一个用户可以有多个 site（最初限制为 1 个）。
 --               data 是整张表单 JSONB（bio + shipped + educations + experiences + photo url 等）
---               slug 全局唯一，用于 yourpedia.app/<slug>/ 路由
+--               slug 全局唯一，用于 workplay.pro/<slug>/ 路由
 --               photo_url 指向 Supabase Storage 的 public URL
 --
 -- RLS 策略：

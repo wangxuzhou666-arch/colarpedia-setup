@@ -2,7 +2,7 @@
   "name": "colarpedia-setup",
   "version": "0.1.0",
   "private": true,
-  "description": "Yourpedia 生成工具——上传简历，自动生成可一键上线的维基百科风格个人主页。",
+  "description": "Workplay 生成工具——上传简历，自动生成可一键上线的维基百科风格个人主页。",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

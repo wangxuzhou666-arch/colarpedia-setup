@@ -22,12 +22,12 @@ export async function generateMetadata({ params, searchParams }) {
   const sp = (await searchParams) || {};
   const lang = safeLang(sp.lang);
   const site = await loadSiteBySlug(siteSlug);
-  if (!site) return { title: "Yourpedia · 页面不存在" };
+  if (!site) return { title: "Workplay · 页面不存在" };
   const isZh = lang === "zh";
   const name = (isZh ? site.data.name_zh : site.data.name) || site.display_name;
   const tagline = (isZh ? site.data.tagline_zh : site.data.tagline) || "";
   return {
-    title: `${name} — ${site.data.siteName || "Yourpedia"}`,
+    title: `${name} — ${site.data.siteName || "Workplay"}`,
     description: tagline || (isZh ? `关于 ${name} 的人物条目。` : `Biographical article on ${name}.`),
   };
 }

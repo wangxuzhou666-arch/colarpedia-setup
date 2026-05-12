@@ -19,11 +19,11 @@ export async function generateMetadata({ params, searchParams }) {
   const sp = (await searchParams) || {};
   const lang = safeLang(sp.lang);
   const fx = getFixture(fixtureName);
-  if (!fx) return { title: "Yourpedia · 示例不存在" };
+  if (!fx) return { title: "Workplay · 示例不存在" };
   const isZh = lang === "zh";
   const name = (isZh ? fx.data.name_zh : fx.data.name) || fx.data.name;
   return {
-    title: `${name} — ${fx.data.siteName || "Yourpedia"}（示例）`,
+    title: `${name} — ${fx.data.siteName || "Workplay"}（示例）`,
     description: (isZh ? fx.data.tagline_zh : fx.data.tagline) || "",
   };
 }

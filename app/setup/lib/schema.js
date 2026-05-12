@@ -71,7 +71,7 @@ export const setupSchema = z.object({
   bio_zh: optionalString,
 
   // Site (required)
-  siteName: z.string().min(1, "Required").default("Yourpedia"),
+  siteName: z.string().min(1, "Required").default("Workplay"),
 
   // Meta (advanced, all optional — relaxed in Phase 1B v2)
   metaBaseUrl: optionalString,

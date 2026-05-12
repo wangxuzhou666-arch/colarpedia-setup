@@ -256,7 +256,7 @@ export default function SiteShell({
     infobox = buildEntityInfobox(resolved.kind, e, isZh);
   }
 
-  const siteName = siteData.siteName || "Yourpedia";
+  const siteName = siteData.siteName || "Workplay";
 
   // 当前页 URL（用于 ?lang= 切换链接保留路径）
   const currentEntityPath =
@@ -297,7 +297,7 @@ export default function SiteShell({
           {isZh
             ? "本页面由作者本人维护。"
             : "This page is maintained by its author."}{" "}
-          <a href="/setup/">{isZh ? "用 Yourpedia 也做一个 →" : "Make yours with Yourpedia →"}</a>
+          <a href="/setup/">{isZh ? "用 Workplay 也做一个 →" : "Make yours with Workplay →"}</a>
         </p>
       </footer>
     </>

@@ -21,17 +21,17 @@ export async function generateMetadata({ params, searchParams }) {
   const sp = (await searchParams) || {};
   const lang = safeLang(sp.lang);
   const site = await loadSiteBySlug(siteSlug);
-  if (!site) return { title: "Yourpedia · 页面不存在" };
+  if (!site) return { title: "Workplay · 页面不存在" };
   const resolved = resolveEntity(site.data, entitySlug);
-  if (!resolved) return { title: "Yourpedia · 页面不存在" };
+  if (!resolved) return { title: "Workplay · 页面不存在" };
   if (resolved.kind === "bio") {
-    return { title: `${site.display_name} — ${site.data.siteName || "Yourpedia"}` };
+    return { title: `${site.display_name} — ${site.data.siteName || "Workplay"}` };
   }
   const e = resolved.entity;
   const isZh = lang === "zh";
   const name = isZh && e.name_zh ? e.name_zh : e.name;
   return {
-    title: `${name} — ${site.data.siteName || "Yourpedia"}`,
+    title: `${name} — ${site.data.siteName || "Workplay"}`,
   };
 }
 

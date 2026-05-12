@@ -149,7 +149,7 @@ export default function SetupForm() {
       tagline_zh: "",
       bio: "",
       bio_zh: "",
-      siteName: "Yourpedia",
+      siteName: "Workplay",
       metaBaseUrl: "",
       githubOwner: "",
       githubRepo: "",
@@ -435,7 +435,7 @@ export default function SetupForm() {
     return "https://" + trimmed.replace(/^\/+/, "");
   };
 
-  // 一键 hosted 上线：调 /api/publish，写入 Supabase，返回 yourpedia.app/<slug>/
+  // 一键 hosted 上线：调 /api/publish，写入 Supabase，返回 workplay.pro/<slug>/
   const handlePublish = async () => {
     setPublishError("");
     setPublishResult(null);
@@ -1257,7 +1257,7 @@ export default function SetupForm() {
             aria-describedby="field-site-name-help"
             {...register("siteName")}
             className="setup-input"
-            placeholder="Yourpedia"
+            placeholder="Workplay"
           />
           <div id="field-site-name-help" className="setup-help">
             显示在网站顶部，如 "Wangpedia"。
@@ -1361,10 +1361,9 @@ export default function SetupForm() {
           </button>
         </div>
 
-        {/* —— 主推路径：Yourpedia hosted —— */}
+        {/* —— 主推路径：Workplay hosted —— */}
         <p className="setup-help" style={{ marginTop: 16, marginBottom: 14 }}>
-          点下面按钮，我们直接给你一个可分享的链接：
-          <strong>yourpedia.app/你的名字</strong>。30 秒上线，不用 GitHub、不用部署、不用敲命令。
+          点下面按钮，30 秒得到 <strong>workplay.pro/你的名字</strong> 的可分享链接。
         </p>
 
         {supaUserLoading && (
@@ -1465,13 +1464,11 @@ export default function SetupForm() {
               </button>
             </div>
             <div className="setup-help" style={{ marginTop: 12 }}>
-              这个链接你可以直接放进领英 / 小红书 / 简历里。链接就是你的网站，不用再做别的。
-              <br />
-              想改内容？回到这个页面改完表单，再点一次「一键上线」就行。
+              想改内容？修改表单后再点「一键上线」即可。
             </div>
 
             <div className="setup-help" style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid var(--wiki-border)" }}>
-              觉得 Yourpedia 好用？
+              觉得 Workplay 好用？
               <a
                 href="https://github.com/wangxuzhou666-arch/colarpedia-setup"
                 target="_blank"

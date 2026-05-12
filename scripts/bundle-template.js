@@ -40,7 +40,7 @@ const IGNORE_DIRS = new Set([
   ".claude",
   // Phase 1A's form-only setup route lives at app/setup/ inside the
   // template repo. Fork users don't want a /setup route on their
-  // deployed wiki — they generate their wiki via Yourpedia (this tool),
+  // deployed wiki — they generate their wiki via Workplay (this tool),
   // not by running the form on their own deploy. Strip it.
   "setup",
 ]);

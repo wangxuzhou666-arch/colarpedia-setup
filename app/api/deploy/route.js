@@ -205,7 +205,7 @@ export async function POST(req) {
   void branch; // reserved for future per-branch commits
 
   const operations = []; // log for debugging / response payload
-  const commitTag = "Yourpedia /setup auto-commit";
+  const commitTag = "Workplay /setup auto-commit";
 
   // 2. Generate file contents
   const photoPath = photoBase64 && photoExt ? `public/portrait.${photoExt}` : null;

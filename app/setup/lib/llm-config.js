@@ -63,7 +63,7 @@ FIELD SEMANTICS:
 - tagline_zh: Chinese version of tagline. ~10-20 字. Same identity, idiomatic phrasing.
 - bio: 2-3 paragraphs of third-person English prose for the bio's lead+intro section. Career arc → notable work → current focus. Wikilink to projects/schools/employers using their slugs. ~120-220 words total.
 - bio_zh: Chinese version of bio. 2-3 段第三人称中文 Wikipedia 风格散文. ~200-400 字.
-- siteName: site brand name. Default "Yourpedia" if user didn't propose one.
+- siteName: site brand name. Default "Workplay" if user didn't propose one.
 - email / linkedin / githubProfile: extract verbatim if explicit. Empty if not. Never invent.
 - metaBaseUrl: usually empty string. The user fills this after deploy.
 - githubOwner / githubRepo: extract from any GitHub URL mentioned. Empty if not present.
@@ -171,7 +171,7 @@ export const WIKI_DATA_TOOL = {
       // Site / contact (existing) -----------------------------------
       siteName: {
         type: "string",
-        description: 'Site brand name. Default "Yourpedia" if user did not propose one.',
+        description: 'Site brand name. Default "Workplay" if user did not propose one.',
       },
       email: {
         type: "string",

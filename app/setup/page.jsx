@@ -1,7 +1,7 @@
 import SetupForm from "./components/SetupForm";
 
 export const metadata = {
-  title: "Yourpedia — 5 分钟生成你的个人 wiki 站",
+  title: "Workplay — 5 分钟生成你的个人 wiki 站",
   description:
     "上传简历，自动生成像维基百科一样的个人主页。免费、开源、不用编程。",
 };
@@ -44,14 +44,14 @@ export default async function SetupPage() {
   const useProof = stars != null && stars >= SOCIAL_PROOF_THRESHOLD;
   const githubFooterText = useProof
     ? `${starsLabel} stars on GitHub →`
-    : "Yourpedia 是一个人维护的开源项目，喜欢的话给个 star 支持一下 →";
+    : "Workplay 是一个人维护的开源项目，喜欢的话给个 star 支持一下 →";
 
   return (
     <>
       <div className="wiki-topbar">
         <div className="wiki-topbar-inner">
           <a href="/" className="wiki-logo">
-            Yourpedia
+            Workplay
             <span>把你的简历变成像维基百科的个人主页 · 5 分钟 · 免费</span>
           </a>
         </div>
@@ -81,11 +81,11 @@ export default async function SetupPage() {
 
       <footer className="wiki-footer">
         <p>
-          Yourpedia 是一个开源工具。生成的 wiki 站点托管在你自己的账号下，
+          Workplay 是一个开源工具。生成的 wiki 站点托管在你自己的账号下，
           代码、内容、域名都是你的。
         </p>
         <p>
-          内容版权归作者本人所有。Yourpedia 在视觉风格上致敬维基百科，
+          内容版权归作者本人所有。Workplay 在视觉风格上致敬维基百科，
           与 Wikimedia 基金会无关联。
         </p>
         <p className="wiki-footer-meta">

@@ -1,6 +1,6 @@
-# Yourpedia · 把简历变成你的个人 wiki 站
+# Workplay · 把简历变成你的个人 wiki 站
 
-[Live](https://colarpedia-setup.vercel.app) · [模板仓库](https://github.com/wangxuzhou666-arch/colarpedia-template)
+[Live](https://workplay.pro) · [模板仓库](https://github.com/wangxuzhou666-arch/colarpedia-template)
 
 一个开源 Web 工具：上传简历 PDF → AI 自动提取信息 → 表单核对修改 →
 一键 fork 模板仓库 + 提交内容 → Vercel 30 秒上线。
@@ -8,7 +8,7 @@
 
 ## 用户视角的流程
 
-1. 打开 [colarpedia-setup.vercel.app](https://colarpedia-setup.vercel.app)
+1. 打开 [workplay.pro](https://workplay.pro)
 2. 上传简历 PDF（或粘贴一段自我介绍）
 3. AI 把表单填好，你检查并补充
 4. 用 GitHub 账号登录，点「一键上线我的 wiki」
