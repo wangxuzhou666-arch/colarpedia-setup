@@ -71,7 +71,7 @@ export default async function SetupPage() {
         <p className="setup-meta">
           想看做出来长什么样？{" "}
           <a
-            href="https://applicant.workplay.pro"
+            href="https://colar.workplay.pro"
             target="_blank"
             rel="noreferrer"
           >
