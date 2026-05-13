@@ -11,7 +11,7 @@ import {
   SYSTEM_PROMPT,
   WIKI_DATA_TOOL,
   buildUserMessage,
-} from "../../setup/lib/llm-config";
+} from "../../yourpedia/lib/llm-config";
 import { checkRateLimit } from "../../../lib/ratelimit";
 import { getSupabaseServerClient } from "../../../lib/supabase/server";
 

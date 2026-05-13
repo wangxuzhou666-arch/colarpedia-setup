@@ -1,12 +1,12 @@
 // 把 site data + entitySlug + lang 转成可渲染的 markdown body。
-// 复用 setup/lib/templates 里现有的模板函数，只是去掉 YAML frontmatter
+// 复用 yourpedia/lib/templates 里现有的模板函数，只是去掉 YAML frontmatter
 // 留 body——hosted 路由的 infobox 用 JSX 直接从 entity 拼，不走 frontmatter。
 
 import {
   wikiPageTemplate,
   projectPageTemplate,
   institutionPageTemplate,
-} from "../../setup/lib/templates";
+} from "../../yourpedia/lib/templates";
 
 const FRONTMATTER_RE = /^---\n[\s\S]*?\n---\n/;
 

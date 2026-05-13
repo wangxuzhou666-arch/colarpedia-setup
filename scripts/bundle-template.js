@@ -38,11 +38,11 @@ const IGNORE_DIRS = new Set([
   "_drafts",
   ".vercel",
   ".claude",
-  // Phase 1A's form-only setup route lives at app/setup/ inside the
-  // template repo. Fork users don't want a /setup route on their
-  // deployed wiki — they generate their wiki via Workplay (this tool),
-  // not by running the form on their own deploy. Strip it.
-  "setup",
+  // The yourpedia form route lives at app/yourpedia/ inside the template
+  // repo. Fork users don't want a /yourpedia route on their deployed
+  // wiki — they generate their wiki via Workplay (this tool), not by
+  // running the form on their own deploy. Strip it.
+  "yourpedia",
 ]);
 
 const IGNORE_FILES = new Set([

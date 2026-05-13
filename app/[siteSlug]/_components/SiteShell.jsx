@@ -344,7 +344,7 @@ export default function SiteShell({
           {isZh
             ? "本页面由作者本人维护。"
             : "This page is maintained by its author."}{" "}
-          <a href="/setup/">{isZh ? "用 Workplay 也做一个 →" : "Make yours with Workplay →"}</a>
+          <a href="/yourpedia/">{isZh ? "用 Workplay 也做一个 →" : "Make yours with Workplay →"}</a>
         </p>
       </footer>
     </>

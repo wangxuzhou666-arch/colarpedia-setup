@@ -21,7 +21,7 @@ import {
   POLISH_SYSTEM_PROMPT,
   POLISH_ENTITY_TOOL,
   buildPolishUserMessage,
-} from "../../setup/lib/llm-config";
+} from "../../yourpedia/lib/llm-config";
 import { checkRateLimit } from "../../../lib/ratelimit";
 import { getSupabaseServerClient } from "../../../lib/supabase/server";
 

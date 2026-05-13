@@ -11,7 +11,7 @@
 // 不做：rate limit（Supabase RLS 已限了 owner_id；如要防 spam 后续上 Upstash）
 
 import { getSupabaseServerClient, getSupabaseAdminClient } from "../../../lib/supabase/server";
-import { deriveSlug } from "../../setup/lib/schema";
+import { deriveSlug } from "../../yourpedia/lib/schema";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;

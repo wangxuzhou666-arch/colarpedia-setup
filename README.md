@@ -46,15 +46,15 @@ cp .env.example .env.local
 # 3. 安装 + 运行
 npm install
 npm run dev
-# → http://localhost:3000/setup/
+# → http://localhost:3000/yourpedia/
 ```
 
 ## 架构
 
 | 路由 | 渲染 | 用途 |
 |---|---|---|
-| `/` | 静态 | 跳转到 `/setup/` |
-| `/setup` | 静态 + 客户端 | 表单、PDF 上传、预览 |
+| `/` | 静态 | 跳转到 `/yourpedia/` |
+| `/yourpedia` | 静态 + 客户端 | 表单、PDF 上传、预览 |
 | `/api/parse` | 服务端 | LLM 调用（API key 不出现在浏览器） |
 | `/api/polish-entity` | 服务端 | 单条经历的 gap-fill 补充 |
 | `/api/publish` | 服务端 | Supabase hosted 路径（写 sites 表 + 上传头像） |

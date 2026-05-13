@@ -1,7 +1,7 @@
 "use client";
 
 // Magic link 登录页：用户输邮箱 → Supabase 发一封登录链接邮件 → 用户点链接
-// 回到 /auth/callback 完成 session 建立 → 跳转到 next 参数指定的页面（默认 /setup）。
+// 回到 /auth/callback 完成 session 建立 → 跳转到 next 参数指定的页面（默认 /yourpedia）。
 
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -40,7 +40,7 @@ function LoginShell({ children }) {
 function LoginInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const next = searchParams.get("next") || "/setup";
+  const next = searchParams.get("next") || "/yourpedia";
   const presetError = searchParams.get("error") || "";
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);

@@ -1498,7 +1498,7 @@ export default function SetupForm() {
         {!supaUserLoading && !supaUser && (
           <>
             <a
-              href="/login?next=/setup/"
+              href="/login?next=/yourpedia/"
               className="deploy-action-button"
               style={{ display: "inline-block", textDecoration: "none" }}
             >

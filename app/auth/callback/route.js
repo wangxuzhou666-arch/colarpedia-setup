@@ -7,10 +7,10 @@ import { getSupabaseServerClient } from "../../../lib/supabase/server";
 export async function GET(request) {
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
-  const next = url.searchParams.get("next") || "/setup";
+  const next = url.searchParams.get("next") || "/yourpedia";
 
   // 安全检查：next 必须是站内相对路径，不能是 //evil.com 之类
-  const safeNext = next.startsWith("/") && !next.startsWith("//") ? next : "/setup";
+  const safeNext = next.startsWith("/") && !next.startsWith("//") ? next : "/yourpedia";
 
   if (!code) {
     return NextResponse.redirect(
