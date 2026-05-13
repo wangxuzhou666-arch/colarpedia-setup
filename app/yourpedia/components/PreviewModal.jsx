@@ -345,9 +345,31 @@ export default function PreviewModal({
         ]);
       if (e.date_range) rows.push([isZh ? "时间" : "Dates", e.date_range]);
     }
+    const entityLogo = e.logo;
+    const entityLogoCaption =
+      (isZh ? e.logo_caption_zh : e.logo_caption) || e.logo_caption || "";
     infoboxJsx = (
       <aside className="wiki-infobox" aria-label="信息卡">
         <div className="wiki-infobox-title">{e.name}</div>
+        {entityLogo && (
+          <div className="wiki-infobox-image">
+            <img
+              src={entityLogo}
+              alt={e.name}
+              style={{
+                width: "100%",
+                maxHeight: 200,
+                objectFit: "contain",
+                background: "#fff",
+                padding: 12,
+                boxSizing: "border-box",
+              }}
+            />
+            {entityLogoCaption && (
+              <div className="wiki-infobox-caption">{entityLogoCaption}</div>
+            )}
+          </div>
+        )}
         <table>
           <tbody>
             {rows.map(([k, v]) => (

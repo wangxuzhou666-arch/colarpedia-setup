@@ -40,6 +40,9 @@ const shippedItem = z.object({
   outputs: z.array(outputItem).max(3, "每个项目最多 3 条产出").optional().default([]),
   body: optionalString,
   body_zh: optionalString,
+  logo: optionalString,
+  logo_caption: optionalString,
+  logo_caption_zh: optionalString,
 });
 
 const educationItem = z.object({
@@ -52,6 +55,9 @@ const educationItem = z.object({
   location: optionalString,
   body: optionalString,
   body_zh: optionalString,
+  logo: optionalString,
+  logo_caption: optionalString,
+  logo_caption_zh: optionalString,
 });
 
 const experienceItem = z.object({
@@ -65,6 +71,9 @@ const experienceItem = z.object({
   outputs: z.array(outputItem).max(3, "每段工作经历最多 3 条产出").optional().default([]),
   body: optionalString,
   body_zh: optionalString,
+  logo: optionalString,
+  logo_caption: optionalString,
+  logo_caption_zh: optionalString,
 });
 
 export const setupSchema = z.object({
