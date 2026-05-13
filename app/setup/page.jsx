@@ -70,10 +70,13 @@ export default async function SetupPage() {
 
         <p className="setup-meta">
           想看做出来长什么样？{" "}
-          <a href="/demo/" target="_blank" rel="noreferrer">
-            点这里看示例
+          <a
+            href="https://applicant.workplay.pro"
+            target="_blank"
+            rel="noreferrer"
+          >
+            看作者自己用 Workplay 做的求职 wiki →
           </a>
-          。
         </p>
 
         <SetupForm />

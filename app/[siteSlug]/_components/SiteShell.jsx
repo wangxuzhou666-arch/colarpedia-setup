@@ -14,6 +14,13 @@ function safeUrlDisplay(url) {
   }
 }
 
+// 跟 templates.js 的 safeHttpUrl 同义——只允许 http(s) 通过，丢掉
+// javascript:/data:/vbscript: 等 XSS sink。返回 "" 让上游过滤。
+function safeHttpUrl(url) {
+  const t = String(url ?? "").trim();
+  return /^https?:\/\//i.test(t) ? t : "";
+}
+
 function buildBioInfobox(siteData, photoUrl, isZh) {
   const titleName = (isZh && siteData.name_zh ? siteData.name_zh : siteData.name) || "[姓名]";
   const tagline = (isZh ? siteData.tagline_zh : siteData.tagline) || "";
@@ -85,6 +92,28 @@ function buildBioInfobox(siteData, photoUrl, isZh) {
   );
 }
 
+// shipped + experience 共用的 outputs 渲染——push 一个 section divider
+// 加最多 3 条 [label, <a>] row 到 rows 数组。education 不挂 outputs。
+function appendOutputsRows(rows, entity, isZh) {
+  const validOutputs = (Array.isArray(entity.outputs) ? entity.outputs : [])
+    .map((o) => ({
+      label: String(o?.label || "").trim(),
+      url: safeHttpUrl(o?.url),
+    }))
+    .filter((o) => o.label && o.url)
+    .slice(0, 3);
+  if (validOutputs.length === 0) return;
+  rows.push({ section: isZh ? "产出" : "Outputs" });
+  for (const o of validOutputs) {
+    rows.push([
+      o.label,
+      <a key={o.url} href={o.url} target="_blank" rel="noreferrer">
+        {safeUrlDisplay(o.url)}
+      </a>,
+    ]);
+  }
+}
+
 function buildEntityInfobox(kind, entity, isZh) {
   const rows = [];
   if (kind === "shipped") {
@@ -100,6 +129,7 @@ function buildEntityInfobox(kind, entity, isZh) {
     if (Array.isArray(entity.tech_stack) && entity.tech_stack.length) {
       rows.push([isZh ? "技术栈" : "Tech stack", entity.tech_stack.join(", ")]);
     }
+    appendOutputsRows(rows, entity, isZh);
   } else if (kind === "education") {
     rows.push([isZh ? "类型" : "Type", isZh ? "教育机构" : "Educational institution"]);
     if (entity.location) rows.push([isZh ? "地点" : "Location", entity.location]);
@@ -120,6 +150,7 @@ function buildEntityInfobox(kind, entity, isZh) {
       ]);
     }
     if (entity.date_range) rows.push([isZh ? "时间" : "Dates", entity.date_range]);
+    appendOutputsRows(rows, entity, isZh);
   }
 
   const logo = entity.logo;
@@ -150,12 +181,28 @@ function buildEntityInfobox(kind, entity, isZh) {
       )}
       <table>
         <tbody>
-          {rows.map(([k, v]) => (
-            <tr key={k}>
-              <th>{k}</th>
-              <td>{v}</td>
-            </tr>
-          ))}
+          {rows.map((row, idx) => {
+            // 三种 row 类型:
+            //   { section: "Outputs" } → 跨列分隔行
+            //   [label, jsxNode]       → 标签 + JSX 值（含 <a>）
+            //   [label, "text"]        → 标签 + 纯文本
+            if (row && !Array.isArray(row) && row.section) {
+              return (
+                <tr key={`s-${idx}`}>
+                  <td colSpan={2} className="wiki-infobox-section">
+                    {row.section}
+                  </td>
+                </tr>
+              );
+            }
+            const [k, v] = row;
+            return (
+              <tr key={`${k}-${idx}`}>
+                <th>{k}</th>
+                <td>{v}</td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </aside>

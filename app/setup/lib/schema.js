@@ -18,6 +18,14 @@ const optionalSlug = z
 const optionalString = z.string().optional().or(z.literal(""));
 const optionalStringArray = z.array(z.string()).optional().default([]);
 
+// 每个项目最多 3 条产出（论文 / essay / demo / repo / blog 等外链）。
+// label 和 url 都允许空字符串——空行不报错，渲染层过滤掉。
+// 真正的 URL 合法性校验在 templates.js 的 safeHttpUrl 里做。
+const outputItem = z.object({
+  label: optionalString,
+  url: optionalString,
+});
+
 const shippedItem = z.object({
   name: z.string().min(1, "Required"),
   name_zh: optionalString,
@@ -29,6 +37,7 @@ const shippedItem = z.object({
   date_range: optionalString,
   url: optionalString,
   tech_stack: optionalStringArray,
+  outputs: z.array(outputItem).max(3, "每个项目最多 3 条产出").optional().default([]),
   body: optionalString,
   body_zh: optionalString,
 });
@@ -53,6 +62,7 @@ const experienceItem = z.object({
   role_zh: optionalString,
   date_range: optionalString,
   location: optionalString,
+  outputs: z.array(outputItem).max(3, "每段工作经历最多 3 条产出").optional().default([]),
   body: optionalString,
   body_zh: optionalString,
 });

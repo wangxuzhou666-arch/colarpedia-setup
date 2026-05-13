@@ -646,6 +646,44 @@ ol.references li { margin-bottom: 4px; }
   align-items: end;
 }
 
+/* 嵌套 details（项目卡片内"更多字段"、产出链接折叠等）— 跟顶级
+   .setup-section 同款 [展开]/[收起] 文字 marker，去掉浏览器原生 ▶。
+   视觉略轻一档（无 hover 背景），跟父级 setup-section 区分嵌套层级。 */
+details.setup-array-details > summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 4px 4px;
+  margin: 0 -4px;
+  border-radius: 2px;
+  user-select: none;
+  color: var(--wiki-text-soft);
+  font-size: 0.95em;
+}
+details.setup-array-details > summary::-webkit-details-marker {
+  display: none;
+}
+details.setup-array-details > summary::after {
+  content: "[展开]";
+  margin-left: auto;
+  font-size: 0.9em;
+  color: var(--wiki-link);
+  white-space: nowrap;
+}
+details.setup-array-details[open] > summary::after {
+  content: "[收起]";
+  color: var(--wiki-text-soft);
+}
+details.setup-array-details > summary:hover::after {
+  text-decoration: underline;
+}
+details.setup-array-details > summary:focus-visible {
+  outline: 2px solid var(--wiki-link);
+  outline-offset: -2px;
+}
+
 .setup-success {
   border: 1px solid var(--wiki-border);
   background: var(--wiki-bg-alt);

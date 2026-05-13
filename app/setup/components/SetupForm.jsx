@@ -90,6 +90,62 @@ function humanizeDeployError(raw) {
   return msg || "上线失败，再试一次。";
 }
 
+// 项目 / 工作经历 共用的"产出"子表单：最多 3 条 label + url。
+// 抽成独立组件是因为 react-hook-form 的 useFieldArray 不能在父组件的
+// .map() 循环里调用（违反 hooks rule），必须每个父行单独挂载一个
+// 子组件来管理它自己的 outputs 数组。namePrefix 传 `shipped.${idx}`
+// 或 `experiences.${idx}`，组件不关心是哪种 entity。
+function EntityOutputs({ control, register, namePrefix, placeholderLabel }) {
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: `${namePrefix}.outputs`,
+  });
+  return (
+    <div className="setup-field" style={{ marginTop: 10 }}>
+      <label className="setup-label">
+        产出（选填，最多 3 条：论文 / essay / demo / repo / blog 等链接）
+      </label>
+      {fields.map((field, oIdx) => (
+        <div
+          key={field.id}
+          style={{ display: "flex", gap: 8, marginTop: 6, alignItems: "flex-start" }}
+        >
+          <input
+            {...register(`${namePrefix}.outputs.${oIdx}.label`)}
+            className="setup-input"
+            placeholder={placeholderLabel || "GPS Localization Essay"}
+            style={{ flex: "0 0 38%" }}
+          />
+          <input
+            {...register(`${namePrefix}.outputs.${oIdx}.url`)}
+            className="setup-input"
+            placeholder="https://..."
+            style={{ flex: 1 }}
+          />
+          <button
+            type="button"
+            onClick={() => remove(oIdx)}
+            className="setup-button"
+            aria-label={`删除产出 ${oIdx + 1}`}
+          >
+            删除
+          </button>
+        </div>
+      ))}
+      {fields.length < 3 && (
+        <button
+          type="button"
+          onClick={() => append({ label: "", url: "" })}
+          className="setup-button-add"
+          style={{ marginTop: 8 }}
+        >
+          + 添加产出
+        </button>
+      )}
+    </div>
+  );
+}
+
 export default function SetupForm() {
   const [pdfFile, setPdfFile] = useState(null);
   const [photoFile, setPhotoFile] = useState(null);
@@ -983,6 +1039,12 @@ export default function SetupForm() {
                     placeholder="github.com/yourname/projectone"
                   />
                 </div>
+                <EntityOutputs
+                  control={control}
+                  register={register}
+                  namePrefix={`shipped.${idx}`}
+                  placeholderLabel="GPS Localization Essay"
+                />
                 <div className="setup-field" style={{ marginTop: 10 }}>
                   <label className="setup-label">详细介绍（中文）</label>
                   <textarea
@@ -1248,7 +1310,7 @@ export default function SetupForm() {
               className="setup-array-details"
               style={{ gridColumn: "1 / -1", marginTop: 6 }}
             >
-              <summary>更多字段（时间 / 地点 / 详情）</summary>
+              <summary>更多字段（时间 / 地点 / 产出 / 详情）</summary>
               <div className="setup-field-row" style={{ marginTop: 10 }}>
                 <div>
                   <label className="setup-label">时间</label>
@@ -1267,6 +1329,12 @@ export default function SetupForm() {
                   />
                 </div>
               </div>
+              <EntityOutputs
+                control={control}
+                register={register}
+                namePrefix={`experiences.${idx}`}
+                placeholderLabel="实习总结 deck"
+              />
               <div className="setup-field" style={{ marginTop: 10 }}>
                 <label className="setup-label">详情（中文）</label>
                 <textarea

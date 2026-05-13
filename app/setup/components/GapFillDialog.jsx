@@ -70,6 +70,36 @@ export default function GapFillDialog({
   const [result, setResult] = useState(null); // {patch, evidence, unfilled, rejected, meta}
   const fileInputRef = useRef(null);
 
+  // 产出链接（仅 shipped + experiences 有）的本地输入态——独立于
+  // 上面的 PDF/文本补全流程，按"添加产出"直接写表单，不调 LLM。
+  const supportsOutputs =
+    entityType === "shipped" || entityType === "experiences";
+  const existingOutputs = Array.isArray(entity?.outputs) ? entity.outputs : [];
+  const remainingOutputSlots = Math.max(0, 3 - existingOutputs.length);
+  const [outputLabel, setOutputLabel] = useState("");
+  const [outputUrl, setOutputUrl] = useState("");
+  const [outputError, setOutputError] = useState("");
+  const [outputAddedCount, setOutputAddedCount] = useState(0);
+
+  const addOutput = () => {
+    setOutputError("");
+    const label = outputLabel.trim();
+    const url = outputUrl.trim();
+    if (!label || !url) {
+      setOutputError("名字和网址都要填。");
+      return;
+    }
+    if (!/^https?:\/\//i.test(url)) {
+      setOutputError("网址要以 http:// 或 https:// 开头。");
+      return;
+    }
+    const next = [...existingOutputs, { label, url }].slice(0, 3);
+    onApply(entityIdx, { outputs: next });
+    setOutputLabel("");
+    setOutputUrl("");
+    setOutputAddedCount((n) => n + 1);
+  };
+
   const onPickFile = (f) => {
     setError("");
     if (!f) {
@@ -250,6 +280,76 @@ export default function GapFillDialog({
               disabled={!!file}
               style={{ marginTop: 10 }}
             />
+
+            {supportsOutputs && (
+              <details
+                className="setup-array-details"
+                style={{ marginTop: 12 }}
+                open={outputAddedCount > 0}
+              >
+                <summary>
+                  或者直接加产出链接（论文 / essay / demo，最多 3 条·不调 LLM）
+                </summary>
+                {existingOutputs.length > 0 && (
+                  <ul className="setup-help" style={{ marginTop: 8 }}>
+                    {existingOutputs.map((o, i) => (
+                      <li key={i}>
+                        {o.label} —{" "}
+                        <a href={o.url} target="_blank" rel="noreferrer">
+                          {o.url}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {remainingOutputSlots > 0 ? (
+                  <>
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: 8,
+                        marginTop: 8,
+                        alignItems: "flex-start",
+                      }}
+                    >
+                      <input
+                        className="setup-input"
+                        placeholder="名字（例如：GPS Localization Essay）"
+                        value={outputLabel}
+                        onChange={(e) => setOutputLabel(e.target.value)}
+                        style={{ flex: "0 0 38%" }}
+                      />
+                      <input
+                        className="setup-input"
+                        placeholder="https://..."
+                        value={outputUrl}
+                        onChange={(e) => setOutputUrl(e.target.value)}
+                        style={{ flex: 1 }}
+                      />
+                      <button
+                        type="button"
+                        onClick={addOutput}
+                        className="setup-button"
+                      >
+                        加
+                      </button>
+                    </div>
+                    {outputError && (
+                      <div className="setup-error" style={{ marginTop: 6 }}>
+                        {outputError}
+                      </div>
+                    )}
+                    <div className="setup-help" style={{ marginTop: 6 }}>
+                      还能加 {remainingOutputSlots} 条。
+                    </div>
+                  </>
+                ) : (
+                  <div className="setup-help" style={{ marginTop: 8 }}>
+                    已经 3 条了，回表单里改或删。
+                  </div>
+                )}
+              </details>
+            )}
 
             {error && (
               <div className="setup-error">

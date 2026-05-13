@@ -404,6 +404,25 @@ export function projectPageTemplate(project, ctx, { lang = "en" } = {}) {
       `      html: ${yamlScalar(`<a href="/wiki/${homepageSlug}/">${htmlEscape(personName)}</a>`)}`
     );
   }
+  // 产出/Outputs section — 论文 / essay / demo / repo / blog 等外部链接。
+  // safeHttpUrl 丢掉 javascript:/data: 等 XSS sink；label 和 url 都必须非空。
+  // 上限 3 条由 schema 保证，这里再 slice(0, 3) 做 defense-in-depth。
+  const validOutputs = (Array.isArray(project.outputs) ? project.outputs : [])
+    .map((o) => ({
+      label: String(o?.label || "").trim(),
+      url: safeHttpUrl(o?.url),
+    }))
+    .filter((o) => o.label && o.url)
+    .slice(0, 3);
+  if (validOutputs.length > 0) {
+    rows.push(`    - section: ${isZh ? "产出" : "Outputs"}`);
+    for (const o of validOutputs) {
+      rows.push(`    - label: ${yamlScalar(o.label)}`);
+      rows.push(
+        `      html: ${yamlScalar(`<a href="${htmlEscape(o.url)}">${htmlEscape(o.label)}</a>`)}`
+      );
+    }
+  }
 
   const safeProjectName = inlineMarkdownText(project.name_zh || project.name);
   const safeProjectNameEn = inlineMarkdownText(project.name);
@@ -493,6 +512,26 @@ export function institutionPageTemplate(entity, ctx, kind, { lang = "en" } = {})
   if (entity.date_range) {
     rows.push(`    - label: ${isZh ? "时间" : "Dates"}`);
     rows.push(`      value: ${yamlScalar(entity.date_range)}`);
+  }
+  // 产出/Outputs section — 只给 experience，education 不挂外链。
+  // 跟 projectPageTemplate 同款 safeHttpUrl + htmlEscape + slice(0,3)。
+  if (!isEducation) {
+    const validOutputs = (Array.isArray(entity.outputs) ? entity.outputs : [])
+      .map((o) => ({
+        label: String(o?.label || "").trim(),
+        url: safeHttpUrl(o?.url),
+      }))
+      .filter((o) => o.label && o.url)
+      .slice(0, 3);
+    if (validOutputs.length > 0) {
+      rows.push(`    - section: ${isZh ? "产出" : "Outputs"}`);
+      for (const o of validOutputs) {
+        rows.push(`    - label: ${yamlScalar(o.label)}`);
+        rows.push(
+          `      html: ${yamlScalar(`<a href="${htmlEscape(o.url)}">${htmlEscape(o.label)}</a>`)}`
+        );
+      }
+    }
   }
   if (homepageSlug) {
     rows.push(
