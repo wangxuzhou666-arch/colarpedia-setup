@@ -277,14 +277,17 @@ export default function UploadPanel({
         />
       </details>
 
-      <button
-        type="button"
-        onClick={handleParse}
-        disabled={busy || (!file && !pasted.trim())}
-        className="setup-button-primary"
-      >
-        {busy ? "正在读取…" : "解析并填好下方表单"}
-      </button>
+      {/* 按钮只在没选 PDF 时显示 — 选了 PDF 已经 auto-parse + 拖拽框内有 busy 提示 */}
+      {!file && (
+        <button
+          type="button"
+          onClick={handleParse}
+          disabled={busy || !pasted.trim()}
+          className="setup-button-primary"
+        >
+          {busy ? "正在读取…" : "解析并填好下方表单"}
+        </button>
+      )}
 
       {error && (
         <div className="upload-error">
