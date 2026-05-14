@@ -674,7 +674,7 @@ export default function SetupForm() {
       />
 
       <div className="setup-example-bar">
-        <span>不想上传简历？试试用示例填一份看看效果：</span>
+        <span>不想上传简历？</span>
         <button
           type="button"
           onClick={fillFreshGradExample}
@@ -682,10 +682,28 @@ export default function SetupForm() {
         >
           填入「中国应届毕业生」示例
         </button>
+        <button
+          type="button"
+          onClick={() => {
+            setContactOpen(true);
+            setProjectsOpen(true);
+            setEducationsOpen(true);
+            setExperiencesOpen(true);
+            const target = document.getElementById("step2-heading");
+            if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+          }}
+          className="setup-button"
+        >
+          自己一项项手填 →
+        </button>
       </div>
 
       {/* 第二步：核对 + 编辑 */}
-      <h2 className="setup-section-heading" style={{ marginTop: 32 }}>
+      <h2
+        id="step2-heading"
+        className="setup-section-heading"
+        style={{ marginTop: 32, scrollMarginTop: 16 }}
+      >
         第二步 · 核对并编辑信息
       </h2>
       <div

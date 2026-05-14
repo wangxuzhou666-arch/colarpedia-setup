@@ -153,18 +153,21 @@ export default siteConfig;
 
 // --- bio page (the homepage) ------------------------------------
 
-export function wikiPageTemplate(data, { photoPath, lang = "en" } = {}) {
+export function wikiPageTemplate(data, { photoPath, lang = "en", mode = "template" } = {}) {
   const isZh = lang === "zh";
+  // mode="template" (default, for /api/deploy → GitHub repo)：空字段填字面占位符，提醒用户在哪改
+  // mode="preview" (PreviewModal)：空字段就空，避免陌生用户把占位符当真实内容
+  const isPreview = mode === "preview";
 
   const titleName = isZh && data.name_zh ? data.name_zh : data.name;
-  const tagline =
-    (isZh ? data.tagline_zh : data.tagline) ||
-    (isZh ? "[一句话定位]" : "[your one-line subtitle]");
-  const bio =
-    (isZh ? data.bio_zh : data.bio) ||
-    (isZh
+  const rawTagline = isZh ? data.tagline_zh : data.tagline;
+  const tagline = rawTagline || (isPreview ? "" : (isZh ? "[一句话定位]" : "[your one-line subtitle]"));
+  const rawBio = isZh ? data.bio_zh : data.bio;
+  const bio = rawBio || (isPreview
+    ? ""
+    : (isZh
       ? `用第三人称中文 Wikipedia 风格写。用 [[Project_One]] 语法链接到其他 wiki 页面 — 还没创建的页面会渲染成红链。`
-      : `Write your story in prose, Wikipedia-style. Use the third person. Link to other wiki pages with [[Project_One]] syntax. Pages that don't exist yet render as red links — a Wikipedia convention for "this article is coming."`);
+      : `Write your story in prose, Wikipedia-style. Use the third person. Link to other wiki pages with [[Project_One]] syntax. Pages that don't exist yet render as red links — a Wikipedia convention for "this article is coming."`));
 
   // Inline-styled thumbnail keeps rendering self-contained — no
   // dependency on colarpedia-template CSS — so /api/deploy output,
@@ -282,7 +285,10 @@ export function wikiPageTemplate(data, { photoPath, lang = "en" } = {}) {
   // English lead sentence wraps with article ("a"/"an"); Chinese uses 是 + 复读 tagline.
   const safeTitle = inlineMarkdownText(titleName);
   const safeTag = inlineMarkdownText(tagline);
-  const leadSentence = isZh
+  // Preview 模式 + tagline 空 → 不出"是。" 这种破句，只显示粗体名字
+  const leadSentence = (isPreview && !safeTag.trim())
+    ? `**${safeTitle}**`
+    : isZh
     ? `**${safeTitle}** 是${safeTag}。`
     : `**${safeTitle}** is ${
         safeTag.toLowerCase().startsWith("a ") ||

@@ -184,8 +184,25 @@ export default function UploadPanel({
   return (
     <div className="upload-panel">
       <h2 className="setup-section-heading">第一步 · 上传简历</h2>
-      <p className="setup-help" style={{ marginTop: -8, marginBottom: 14 }}>
+      <p className="setup-help" style={{ marginTop: -8, marginBottom: 8 }}>
         把简历 PDF 拖进来。10 秒内自动帮你填好下面的表单，你再改不满意的地方。
+      </p>
+      <p
+        className="setup-help"
+        style={{
+          marginTop: 0,
+          marginBottom: 14,
+          padding: "8px 12px",
+          background: "var(--wiki-bg-alt, #f8f9fa)",
+          border: "1px solid var(--wiki-border, #c8ccd1)",
+          borderRadius: 4,
+          fontSize: 12,
+          lineHeight: 1.6,
+        }}
+      >
+        <strong>隐私说明：</strong>PDF 不会进我们的数据库，
+        我们只把它发给 AI 抽取一次内容，不留底、不用来训练。
+        不愿意上传也行 — 往下滚到「第二步」可以自己一项一项手填。
       </p>
 
       <div

@@ -174,6 +174,7 @@ export default function PreviewModal({
       return wikiPageTemplate(data, {
         lang,
         photoPath: photoPreviewUrl ? "public/__preview_photo__" : null,
+        mode: "preview",
       });
     }
     const ctx = {
