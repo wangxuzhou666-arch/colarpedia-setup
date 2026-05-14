@@ -12,11 +12,18 @@ export const metadata = {
   },
 };
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
+
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <head>
         <meta name="color-scheme" content="light only" />
+        <meta name="format-detection" content="telephone=no" />
       </head>
       <body>{children}</body>
     </html>

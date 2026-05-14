@@ -34,6 +34,12 @@
 
 * { box-sizing: border-box; }
 
+html {
+  /* iOS Safari 横竖屏切换时会把字号 boost，关掉以避免响应式断点之外的意外放大 */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 html, body {
   margin: 0;
   padding: 0;
@@ -43,6 +49,20 @@ html, body {
   font-size: 16px;
   line-height: var(--lh-body);
   -webkit-font-smoothing: antialiased;
+  /* 防止长 URL / 英文专有名词在窄屏撑出横向滚动条 */
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+}
+
+/* 媒体 & 表格防溢出 — 内容是用户上传的简历，可能出现超长链接、宽表格、大图。
+   这些规则比 body overflow-x:hidden 安全（不会破坏将来的 sticky 元素）。 */
+img, video, iframe, svg {
+  max-width: 100%;
+  height: auto;
+}
+pre, code, .wiki-main pre {
+  max-width: 100%;
+  overflow-x: auto;
 }
 
 a {
@@ -444,6 +464,22 @@ ol.references li { margin-bottom: 4px; }
   .wiki-main h2 { font-size: 1.35em; }
 }
 
+/* 真·手机断点 — iPhone/Android 竖屏 (≤480px)。
+   720px 档主要给 iPad 竖屏，手机需要更激进地收紧 padding 与字号，
+   否则两侧 24px 边距会吃掉 12% 屏宽。 */
+@media (max-width: 480px) {
+  .wiki-topbar-inner { padding: 8px 12px; gap: 12px; }
+  .wiki-logo { font-size: 19px; }
+  .wiki-logo span { font-size: 11px; }
+
+  .wiki-shell { padding: 12px 12px 40px; gap: 16px; }
+  .wiki-footer { padding: 16px 12px 32px; }
+
+  .wiki-title { font-size: 1.45em; }
+  .wiki-main h2 { font-size: 1.25em; }
+  .wiki-main h3 { font-size: 1.1em; }
+}
+
 /* ===== /setup form (Wikipedia-faithful) =====
    Same tokens as the rest of Colarpedia. The setup tool is a wiki page
    in disguise: serif headings, sans-serif metadata, 1px borders,
@@ -701,6 +737,26 @@ details.setup-array-details > summary:focus-visible {
 @media (max-width: 720px) {
   .setup-field-row { grid-template-columns: 1fr; }
   .setup-array-row { grid-template-columns: 1fr; }
+}
+
+/* 手机断点 — setup 表单/上传卡片收紧。
+   主要痛点：默认 24px shell padding + 18px upload-panel padding = 42px 双边距，
+   iPhone SE (375px) 上有效宽度只剩 333px，输入框看起来很挤。 */
+@media (max-width: 480px) {
+  .setup-shell { padding: 16px 12px 48px; }
+  .setup-section { margin-top: 20px; }
+  .setup-section-heading { font-size: 1.3em; }
+  .setup-intro { font-size: 15px; }
+  .setup-example-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+  /* iOS Safari 在 input font-size < 16px 时会自动 zoom，破坏视觉。
+     表单输入字号统一抬到 16px。 */
+  .setup-input,
+  .setup-textarea { font-size: 16px; }
+  .setup-button-primary { font-size: 15px; padding: 12px 16px; }
 }
 
 /* ===== Upload panel (Phase 1B LLM auto-fill) ===== */
