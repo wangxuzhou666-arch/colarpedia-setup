@@ -61,6 +61,8 @@ export default function UploadPanel({
     onPdfFileChange?.(f);
     setPasted("");
     setInfo("");
+    // 拖完 = 用户已确认提交，立刻 auto-parse（fix「以为上传就完事了」UX bug）
+    handleParse(f);
   };
 
   const fileToBase64 = (f) =>
@@ -75,8 +77,10 @@ export default function UploadPanel({
       reader.readAsDataURL(f);
     });
 
-  const handleParse = async () => {
-    if (!file && !pasted.trim()) {
+  const handleParse = async (overrideFile = null) => {
+    // overrideFile 让 onPickFile 直接传刚选好的 file，避开 React state 没 propagate 的窗口
+    const useFile = overrideFile || file;
+    if (!useFile && !pasted.trim()) {
       setError("先上传一份 PDF 简历，或展开下方「没 PDF？」粘贴一段文字");
       return;
     }
@@ -86,8 +90,8 @@ export default function UploadPanel({
     setInfo("");
     try {
       const body = {};
-      if (file) {
-        body.pdfBase64 = await fileToBase64(file);
+      if (useFile) {
+        body.pdfBase64 = await fileToBase64(useFile);
       } else if (pasted.trim()) {
         body.text = pasted.trim();
       }
@@ -201,7 +205,7 @@ export default function UploadPanel({
         }}
       >
         <strong>隐私说明：</strong>PDF 不会进我们的数据库，
-        我们只把它发给 AI 抽取一次内容，不留底、不用来训练。
+        我们只读取一次抽取里面的信息，不留底、不用来训练。
         不愿意上传也行 — 往下滚到「第二步」可以自己一项一项手填。
       </p>
 
@@ -242,7 +246,9 @@ export default function UploadPanel({
               （{Math.round(file.size / 1024)} KB）
             </span>
             <div className="setup-help" style={{ marginTop: 4 }}>
-              点击换一份 PDF，或拖另一个文件进来。
+              {busy
+                ? "正在为你抽取简历内容，10 秒内自动填好下方表单…"
+                : "点击换一份 PDF，或拖另一个文件进来。"}
             </div>
           </>
         ) : (
