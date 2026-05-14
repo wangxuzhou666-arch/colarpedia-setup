@@ -277,12 +277,12 @@ export default function UploadPanel({
         />
       </details>
 
-      {/* 按钮只在没选 PDF 时显示 — 选了 PDF 已经 auto-parse + 拖拽框内有 busy 提示 */}
-      {!file && (
+      {/* 按钮只在 paste 模式下有粘贴文本时显示;file 模式 auto-parse + 拖拽框 busy 提示已足够 */}
+      {!file && pasted.trim() && (
         <button
           type="button"
           onClick={handleParse}
-          disabled={busy || !pasted.trim()}
+          disabled={busy}
           className="setup-button-primary"
         >
           {busy ? "正在读取…" : "解析并填好下方表单"}
