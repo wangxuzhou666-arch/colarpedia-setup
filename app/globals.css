@@ -1618,12 +1618,34 @@ a.wikilink-live:hover {
   background: var(--wiki-link-hover-bg);
 }
 @media (max-width: 720px) {
+  /* 手机上让 modal 撑满屏幕，避免 overlay padding 制造"卡片浮在页面上"的错觉 */
+  .preview-overlay { padding: 0; }
+  .preview-modal {
+    min-height: 100vh;
+    border: 0;
+    box-shadow: none;
+  }
+  /* audit panel 限高 + 内部滚动，避免把首屏 content 完全挤出视野 */
+  .preview-audit-panel {
+    max-height: 38vh;
+    overflow-y: auto;
+  }
   .preview-body { flex-direction: column; }
+  /* nav 改成自适应高度（最多 22vh，content 之上不是占大半屏） */
   .preview-nav {
     flex: 0 0 auto;
-    max-height: 30vh;
+    max-height: 22vh;
     border-right: 0;
     border-bottom: 1px solid var(--wiki-border-light);
+    padding: 10px 0 14px;
+  }
+  /* mobile 上 polish 行从横排改竖排，每条建议占一行更易点 */
+  .preview-audit-polish-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .preview-audit-polish-group {
+    width: 100%;
   }
 }
 .preview-wiki-main {
