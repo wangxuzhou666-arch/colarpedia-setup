@@ -1,4 +1,5 @@
 import SetupForm from "./components/SetupForm";
+import AuthStatusBadge from "./components/AuthStatusBadge";
 
 export const metadata = {
   title: "Workplay — 5 分钟生成你的个人 wiki 站",
@@ -54,6 +55,7 @@ export default async function SetupPage() {
             Workplay
             <span>把你的简历变成像维基百科的个人主页 · 5 分钟 · 免费</span>
           </a>
+          <AuthStatusBadge />
         </div>
       </div>
 
