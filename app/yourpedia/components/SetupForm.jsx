@@ -328,53 +328,88 @@ export default function SetupForm() {
   }, [nameValue, slugTouched, setValue]);
 
   // 中国应届本科毕业生示例（求互联网产品 / 运营第一份工作）
-  const fillFreshGradExample = () => {
-    setValue("name", "Chen Si");
-    setValue("name_zh", "陈思");
-    setValue("homepageSlug", "Chen_Si");
+  // 注:姓名 / Email / LinkedIn 都做了明显占位处理(.example 域名 + 留空 LinkedIn),
+  // 避免真人撞库。第三段实习公司"听潮数据"是虚构,武汉本地小厂调性,降整体精英感。
+  // 头像从 public/example-photos/lin-zhixia.jpg 自动加载,加载失败不阻塞表单填充。
+  const fillFreshGradExample = async () => {
+    setValue("name", "Lin Zhixia");
+    setValue("name_zh", "林知夏");
+    setValue("homepageSlug", "Lin_Zhixia");
     setSlugTouched(true);
-    setValue("tagline", "Recent grad · Information Management @ Wuhan University · seeking product/operations roles");
-    setValue("tagline_zh", "应届毕业生 · 武汉大学信息管理 · 求互联网产品 / 运营岗位");
+    setValue(
+      "tagline",
+      "Class of 2026 graduate, Wuhan University Information Management — seeking product / operations roles"
+    );
+    setValue(
+      "tagline_zh",
+      "武汉大学信息管理 2026 届毕业生 · 求产品 / 运营岗位"
+    );
     setValue(
       "bio",
-      "Chen Si is a 2026 graduate of the School of Information Management at Wuhan University (B.M. Information Management and Information Systems). During her undergrad she completed three internships — community operations at Meituan, product analyst at JD, and data operations at a Shanghai-based fintech startup — and led a campus reading-club project that grew to roughly 800 active members. She is currently seeking product or operations roles in Chinese internet companies."
+      "Lin Zhixia (born 2003) is a 2026 graduate of [[Wuhan_University|Wuhan University]]'s School of Information Management, majoring in Information Management and Information Systems. During her undergraduate studies she completed three internships — community operations at [[Meituan|Meituan]], product analytics at [[JD|JD.com]], and data operations at [[Tingchao_Data|Tingchao Data]] — and served as project lead of [[Wuhan_Reading_Club|Wuda Reading Club]], a student-initiated reading group that grew to roughly 800 active members. She is currently seeking product or operations roles at internet companies."
     );
     setValue(
       "bio_zh",
-      "陈思是武汉大学信息管理学院 2026 届毕业生（信息管理与信息系统专业，学士）。本科期间在三家公司实习：美团社区运营、京东产品分析、上海某金融科技初创公司数据运营，并担任校读书社项目负责人（运营到约 800 活跃成员）。目前正在求互联网公司产品 / 运营岗位。"
+      "林知夏，2003 年生，[[Wuhan_University|武汉大学]] 信息管理学院 2026 届本科毕业生，专业为信息管理与信息系统。本科期间她完成了三段实习——分别在 [[Meituan|美团]] 做社区运营、在 [[JD|京东]] 做产品分析、在 [[Tingchao_Data|听潮数据]] 做数据运营，并担任 [[Wuhan_Reading_Club|武大读书社]] 项目负责人，把社团运营到约 800 活跃成员。目前在找互联网公司的产品或运营岗位。"
     );
-    setValue("email", "chensi@example.com");
-    setValue("linkedin", "linkedin.com/in/chensi");
+    setValue("email", "linzhixia@example.com");
+    setValue("linkedin", "");
     setValue("githubProfile", "");
 
     replaceShippedAndClearThumbs([
       {
-        name: "Wuhan University Reading Club",
+        name: "Wuda Reading Club",
         name_zh: "武大读书社",
         slug: "Wuhan_Reading_Club",
-        description: "Student-run reading club, scaled to ~800 active members",
-        description_zh: "学生发起的读书社，运营到约 800 活跃成员",
-        role: "Founder & project lead",
-        role_zh: "发起人 / 项目负责人",
-        date_range: "2024 – 2025",
+        description:
+          "Student-initiated reading group at Wuhan University, grown to ~800 active members",
+        description_zh:
+          "武汉大学学生发起的读书社，运营到约 800 活跃成员",
+        role: "Project Lead",
+        role_zh: "项目负责人",
+        date_range: "2023.03 – 2025.12",
         url: "",
-        tech_stack: ["WeChat", "Notion"],
-        body: "Chen Si founded the campus reading club in late 2024 with 12 founding members. By summer 2025 the club had grown to roughly 800 active members across three campuses, organizing weekly book discussions and monthly author Q&A sessions.",
-        body_zh: "陈思 2024 年末发起校读书社，初始 12 人。2025 年夏发展到三校区约 800 活跃成员，每周组织读书讨论、每月组织作者问答。",
+        tech_stack: ["WeChat", "Feishu", "Xiaohongshu"],
+        logo: "/example-photos/wuda-reading-club.jpg",
+        logo_caption: "Wuda Reading Club gathering",
+        logo_caption_zh: "读书社双周线下讨论现场",
+        body: "Wuda Reading Club is a student-initiated reading group at [[Wuhan_University|Wuhan University]] founded in early 2023. Lin Zhixia took over as project lead in her sophomore year and ran it through graduation. Cadence: one offline discussion every two weeks rotating across five colleges (to avoid any single department becoming the home venue), plus one online co-read per month. Membership grew from roughly 60 to about 800 over two and a half years, primarily through word of mouth and reading notes posted on Xiaohongshu. Lin owned scheduling, the WeChat groups, and the monthly book-pick rotation. To raise discussion quality, she also maintained a member tag sheet (major, year, preferred genre) and assembled mixed groups for each offline session by those tags.",
+        body_zh:
+          "武大读书社是 2023 年初在 [[Wuhan_University|武汉大学]] 学生中发起的读书小组。林知夏大二接手做项目负责人，一直带到毕业。节奏：每两周线下讨论一次，在五个学院之间轮流，避免被某个院「主场化」；每月一本线上共读。两年半时间成员从大约 60 人长到约 800 人，主要靠口碑和在小红书上发读书笔记带新。林知夏负责排期、成员微信群、以及每月选书的读者轮值。为提高讨论质量，她维护了一张成员标签表（专业、年级、偏好书类），每次线下活动按标签做小组混搭。",
       },
       {
-        name: "Library Borrowing Data Viz",
-        name_zh: "图书借阅数据可视化",
+        name: "Library Borrowing Trends Dashboard",
+        name_zh: "图书借阅趋势看板",
         slug: "Library_Data_Viz",
-        description: "Coursework: 3-year visualization of campus library borrowing trends",
-        description_zh: "课程作业：3 年校园图书借阅趋势可视化",
+        description:
+          "Coursework: three-year visualization of Wuhan University library borrowing patterns",
+        description_zh:
+          "课程作业：武汉大学近三年图书借阅趋势可视化",
         role: "Author",
         role_zh: "作者",
-        date_range: "2025 春",
+        date_range: "2024.10 – 2024.12",
         url: "",
-        tech_stack: ["Python", "Pandas", "Streamlit"],
-        body: "A course project for Data Visualization, analyzing three years of anonymized library borrowing logs to identify reading-pattern shifts across departments.",
-        body_zh: "数据可视化课程作业，分析 3 年匿名图书借阅日志，识别各院系阅读偏好的迁移。",
+        tech_stack: ["Python", "Pandas", "Tableau"],
+        body: "Final project for the Fall 2024 Information Visualization course. Lin Zhixia took three years of [[Wuhan_University|Wuhan University]] library circulation data and built a dashboard breaking borrowing volume down by college, by month, and by book category. Her report flagged a non-obvious finding: humanities borrowing dropped about 30% after the library reopened in 2022, while CS-category borrowing stayed flat. To rule out the supply-side explanation (i.e. that fewer humanities books were acquired), she cross-checked new-acquisition lists for both categories and confirmed the gap was demand-side, not stock-side. The dashboard was graded A and used by the instructor as a sample work the following semester.",
+        body_zh:
+          "2024 年秋季《信息可视化》课程的期末作业。林知夏用 [[Wuhan_University|武汉大学]] 图书馆近三年公开的借阅数据，做了一个按学院、按月份、按图书类别分布的看板。她在报告里写出一个不显然的发现：人文类借阅在 2022 年图书馆恢复开放之后下降了约 30%，而计算机类借阅基本持平。为排除「是不是新书少了」的反向解释，她另查了两个类别的新书入库清单，确认差距来自借阅端而不是库存端。这份作业拿了 A，任课老师下学期把它当作样例作品给后面的学生看。",
+      },
+      {
+        name: "Campus Secondhand Book Exchange",
+        name_zh: "校园二手书循环平台",
+        slug: "Secondhand_Book_Exchange",
+        description:
+          "Business plan for a campus book-resale platform; bronze medal at the Internet+ school round",
+        description_zh:
+          "校园二手教材交易平台商业计划书 · 互联网+ 大学生创新创业大赛 校级铜奖",
+        role: "Team Lead",
+        role_zh: "项目负责人",
+        date_range: "2024.03 – 2024.05",
+        url: "",
+        tech_stack: ["Figma", "Survey", "Pitch"],
+        body: "Lin Zhixia led a five-person team in the 2024 [[Wuhan_University|Wuhan University]] Internet+ undergraduate entrepreneurship competition with a proposal for a campus secondhand textbook exchange — addressing the recurring gap where last-year's cohort sells off textbooks by weight while next-year's cohort buys them new at full price, with no reliable matching layer between them. She owned the market-research track: 200 surveys across three colleges and 12 in-depth interviews with rising sophomores (the cohort with the highest course-to-textbook turnover). The pitch advanced to the campus top 20 and won a school-level bronze medal. The team did not continue past the competition; Lin's takeaway, written into the final report, was that the demand is real but the two-sided market too thin for a daily-use app — any working version would need to clear inventory during the two-week freshman-orientation window.",
+        body_zh:
+          "林知夏在 2024 年 [[Wuhan_University|武汉大学]] 「互联网+」大学生创新创业大赛中带 5 人小队，做校园二手教材循环交易平台 —— 解决每学期前一届教材被低价处理、下一届又原价买新书、中间缺撮合层的问题。她主要负责市场调研：200 份问卷（覆盖三个学院）+ 12 场针对大二学生的用户访谈（大二是教材更替最频繁的一届）。提案进入校赛前 20，最终拿到校级铜奖。比赛结束后团队没有继续做下去，她在结题报告里写的判断是：需求真实存在，但双边市场太薄，起量必须卡在每年开学前两周的迎新窗口里把库存清掉，平日 app 留存撑不起来。",
       },
     ]);
 
@@ -383,12 +418,16 @@ export default function SetupForm() {
         name: "Wuhan University",
         name_zh: "武汉大学",
         slug: "Wuhan_University",
-        degree: "B.M. in Information Management and Information Systems",
-        degree_zh: "信息管理与信息系统学士",
-        date_range: "2022 – 2026",
+        degree: "B.S. in Information Management and Information Systems",
+        degree_zh: "信息管理与信息系统 学士",
+        date_range: "2022.09 – 2026.06",
         location: "武汉",
-        body: "Chen Si is a 2026 graduate of the School of Information Management at Wuhan University, majoring in Information Management and Information Systems. Her undergraduate coursework spans data management, applied statistics, and user research.",
-        body_zh: "陈思是武汉大学信息管理学院 2026 届毕业生，主修信息管理与信息系统专业。本科课程涉及数据管理、应用统计、用户研究。",
+        body: "Lin Zhixia attended the School of Information Management at [[Wuhan_University|Wuhan University]] from 2022 to 2026, pursuing a B.S. in Information Management and Information Systems. Core coursework included database systems, information retrieval, data visualization, and user research methods. Her senior thesis examined how undergraduates discover books through Xiaohongshu, using 420 questionnaire responses drawn from six universities in Hubei province; the sampling frame was built off contacts she had accumulated running [[Wuhan_Reading_Club|the reading club]].",
+        body_zh:
+          "林知夏 2022 年到 2026 年在 [[Wuhan_University|武汉大学]] 信息管理学院读本科，专业是信息管理与信息系统。核心课程包括数据库系统、信息检索、数据可视化和用户研究方法。毕业论文研究的是大学生在小红书上发现图书的路径，样本来自湖北六所高校的 420 份问卷；问卷的发放渠道很大程度上是靠她做 [[Wuhan_Reading_Club|武大读书社]] 期间积累下来的跨校联系人。",
+        logo: "/example-photos/wuhan-university.jpg",
+        logo_caption: "Wuhan University campus, cherry blossom season",
+        logo_caption_zh: "武汉大学校园 · 樱花季",
       },
     ]);
 
@@ -399,34 +438,54 @@ export default function SetupForm() {
         slug: "Meituan",
         role: "Community Operations Intern",
         role_zh: "社区运营实习生",
-        date_range: "2024 年 6 月 – 9 月",
+        date_range: "2024.06 – 2024.09",
         location: "北京",
-        body: "Chen Si interned on the Meituan local-services community operations team during summer 2024. Her main project was the design and rollout of a new contributor-incentive system, which improved weekly active contributor count by 18% during the pilot.",
-        body_zh: "陈思 2024 年暑期在美团本地生活社区运营组实习。主要项目是设计并落地新的内容贡献者激励体系，试点期内周活跃贡献者提升 18%。",
+        body: "Lin Zhixia interned with the community operations team at [[Meituan|Meituan]] from June to September 2024, working on the restaurant review section. The diagnosed problem: under the existing author-tier system, most contributors plateaued at the middle tier because the perk gap between middle and top was too narrow to pull anyone upward. Her main project was redesigning the food-review author incentive tiers for two pilot cities (Wuhan and Chengdu). Workflow: she drafted the tier rules, ran a 6-week pilot, and tracked weekly active contributors as the headline metric. By the end of the pilot, weekly active contributor count was ~18% above the pre-launch baseline, and the team rolled the same tier structure out to two additional cities the following quarter. Mentor exit feedback: her biggest takeaway was learning to instrument metrics *before* shipping the rule change, not after.",
+        body_zh:
+          "林知夏 2024 年 6 月到 9 月在 [[Meituan|美团]] 社区运营组实习，主要做餐厅评价板块。她接手时的诊断是：现有作者等级体系中，绝大多数贡献者卡在中间等级 —— 中间到顶级的权益差太小，没人有动力往上走。她的主项目是为武汉和成都两个试点城市重新设计食评作者的激励等级：写规则、跑 6 周试点、每周盯活跃作者数作为核心指标。试点结束时周活跃贡献者比上线前的基线高了约 18%，组里下个季度把这套等级结构沿用到了另外两个城市。导师离职反馈里写的：她最大的收获是学会了在改规则**之前**先把指标埋好，而不是改完之后再补埋点。",
       },
       {
-        name: "JD",
+        name: "JD.com",
         name_zh: "京东",
         slug: "JD",
-        role: "Product Analyst Intern",
+        role: "Product Analytics Intern",
         role_zh: "产品分析实习生",
-        date_range: "2025 年 1 月 – 4 月",
+        date_range: "2025.01 – 2025.04",
         location: "北京",
-        body: "Chen Si interned as a product analyst on JD's home-appliance category team during winter–spring 2025. She was responsible for weekly category-performance dashboards and ad-hoc cohort analyses supporting two PMs.",
-        body_zh: "陈思 2025 年冬春在京东家电品类组担任产品分析实习生。负责品类周报、cohort 分析等支持两名 PM 的决策。",
+        body: "Lin Zhixia interned with the major-appliances product team at [[JD|JD.com]] from January to April 2025, supporting two product managers. The team owned air conditioners, refrigerators, and washing machines — three lines with sharply different seasonality, which made a shared dashboard hard to read week-to-week. Her recurring deliverable was a weekly category report covering all three lines, split by city tier and by promotion window so the seasonality could be normalized out before reading trends. Beyond the weekly cadence, she ran a one-off cohort analysis on returning buyers during the 618 pre-sale window — specifically users who bought a second appliance within 30 days of the first; the team used that finding to extend the early-bird coupon validity by 48 hours. Exit deliverable: a brief on how far ahead the team should kick off a 618 retrospective in the next planning cycle.",
+        body_zh:
+          "林知夏 2025 年 1 月到 4 月在 [[JD|京东]] 大家电产品组实习，支持两名产品经理。组里负责空调、冰箱、洗衣机三条产品线，三个品类季节性差很大，公用一张周报看板很难读。她每周固定输出一份品类周报，按城市层级和促销期做 cohort 拆分，把季节性的影响先剥掉再看趋势。除了周报节奏，她还做了一次 618 预售期间复购用户的 cohort 分析，专门看那些买完第一件家电后 30 天内又买第二件的用户；组里据此把早鸟券的有效期延长了 48 小时。实习结束时她写了一份小结，记录下次大促前应该提前多久启动复盘窗口。",
       },
       {
-        name: "Lingxi Fintech",
-        name_zh: "灵犀金融科技",
-        slug: "Lingxi_Fintech",
+        name: "Tingchao Data",
+        name_zh: "听潮数据",
+        slug: "Tingchao_Data",
         role: "Data Operations Intern",
         role_zh: "数据运营实习生",
-        date_range: "2025 年 6 月 – 9 月",
-        location: "上海",
-        body: "Chen Si interned at Lingxi, a Shanghai-based fintech startup serving SME loan operations, where she built customer-funnel reporting and led the migration of operational dashboards from Excel to Metabase.",
-        body_zh: "陈思 2025 年暑期在灵犀（上海某金融科技初创，服务中小企业信贷运营）担任数据运营实习生，搭建客户漏斗看板，主导运营看板从 Excel 迁移到 Metabase。",
+        date_range: "2025.06 – 2025.09",
+        location: "武汉",
+        body: "Lin Zhixia interned at [[Tingchao_Data|Tingchao Data]] from June to September 2025; the company is an early-stage data analytics startup based in Wuhan, with roughly 20 employees at the time and a customer base of mid-sized regional retail chains. She rebuilt the customer funnel dashboard used in the operations team's Monday standup, migrating it from a shared Excel file to Metabase pointed at the company's own Postgres warehouse. The dashboard covered four nodes: acquisition, activation, retention, and revenue. Before the migration, the Monday number was manually refreshed every Sunday night and was already two days stale by the time anyone discussed it; after the migration, the standup ran on live data. Per her exit memo, the harder half of the project was negotiating metric definitions across sales, ops, and engineering *before* any dashboard work could start — without aligned definitions, even a polished dashboard would just give each team its own version of the truth.",
+        body_zh:
+          "林知夏 2025 年 6 月到 9 月在 [[Tingchao_Data|听潮数据]] 实习，这是一家在武汉的早期数据分析创业公司，当时大约 20 人，客户主要是区域性的中型零售连锁。她重做了运营组周一例会用的客户漏斗看板，把它从一个共享 Excel 文件迁到了 Metabase 上，数据接公司自己的 Postgres 仓库。看板覆盖获客、激活、留存、营收四个节点。迁之前那张表是周日晚上有人手动刷出来的，到周一开会的时候数据已经滞后两天；迁完之后周一例会用的是实时数据。她在离职小结里写：这段实习真正难的一半不是搭看板，而是在开工之前把销售、运营、工程三边对同一个指标的口径吵齐 —— 口径不统一，看板做得再漂亮也是各看各的。",
+        logo: "/example-photos/tingchao-data-logo.jpg",
+        logo_caption: "Tingchao Data logo",
+        logo_caption_zh: "听潮数据 logo",
       },
     ]);
+
+    // 自动加载默认头像 — 等同于用户亲手上传一张图
+    try {
+      const res = await fetch("/example-photos/lin-zhixia.jpg");
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const blob = await res.blob();
+      const file = new File([blob], "lin-zhixia.jpg", {
+        type: blob.type || "image/jpeg",
+      });
+      onPhotoChange(file);
+    } catch (e) {
+      // 头像加载失败不阻塞表单填充 — 用户仍可手动上传
+      console.warn("[example] 默认头像加载失败:", e);
+    }
   };
 
   const setThumbError = (idx, msg) => {
