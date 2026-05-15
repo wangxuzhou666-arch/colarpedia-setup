@@ -4,9 +4,24 @@
 // Paste fallback 默认折叠：3-agent review 一致认为移动端用户的简历 PDF 通常在电脑上，
 // 完全删 paste 会把 xhs 引流过来的手机端用户卡死（卡死率估 60%+）。
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const MAX_PDF_BYTES = 5 * 1024 * 1024; // 5 MB
+
+// 等待期间展示的阶段。前端基于 P50 耗时模拟推进，最后一阶段由真返回触发。
+// 文案严格按 wikipedia register：动作动词 + 对象，无 "AI" / 无营销味。
+// 真 streaming 上线后会换成 SSE delta 驱动（见 Day 2 计划）。
+const PARSE_STAGES = [
+  "解析简历内容",
+  "整理教育经历",
+  "整理工作与项目",
+  "编写个人简介",
+  "填入表单",
+];
+
+// 阶段切换时间表（毫秒）— P50 ~15s 拆段。
+// stage 4 永不自动推进，等真返回。
+const STAGE_TIMELINE = [1500, 4000, 8000];
 
 const FORM_FIELDS = [
   "name",
@@ -36,11 +51,22 @@ export default function UploadPanel({
   const [file, setFile] = useState(null);
   const [pasted, setPasted] = useState("");
   const [busy, setBusy] = useState(false);
+  const [stage, setStage] = useState(-1); // -1 = idle, 0..4 = 当前 active stage
   const [error, setError] = useState("");
   const [showLoginCTA, setShowLoginCTA] = useState(false);
   const [info, setInfo] = useState("");
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef(null);
+
+  // Busy 期间按时间表自动推进 stage 0→1→2→3。stage 3 ("编写个人简介")
+  // 永久停留直到真返回触发 stage 4 + setBusy(false)。
+  useEffect(() => {
+    if (!busy) return;
+    const timers = STAGE_TIMELINE.map((ms, i) =>
+      setTimeout(() => setStage((cur) => Math.max(cur, i + 1)), ms)
+    );
+    return () => timers.forEach(clearTimeout);
+  }, [busy]);
 
   const onPickFile = (f) => {
     if (!f) return;
@@ -85,6 +111,7 @@ export default function UploadPanel({
       return;
     }
     setBusy(true);
+    setStage(0);
     setError("");
     setShowLoginCTA(false);
     setInfo("");
@@ -178,8 +205,12 @@ export default function UploadPanel({
             ? `（今天还能解析 ${remaining} 次）`
             : "")
       );
+      // 真返回后短暂闪一下 "填入表单" 给用户一个收尾感，再隐藏进度列表
+      setStage(4);
+      await new Promise((r) => setTimeout(r, 350));
     } catch (e) {
       setError(humanizeParseError(e.message));
+      setStage(-1);
     } finally {
       setBusy(false);
     }
@@ -247,7 +278,7 @@ export default function UploadPanel({
             </span>
             <div className="setup-help" style={{ marginTop: 4 }}>
               {busy
-                ? "正在为你抽取简历内容，10 秒内自动填好下方表单…"
+                ? "正在解析，请稍候"
                 : "点击换一份 PDF，或拖另一个文件进来。"}
             </div>
           </>
@@ -260,6 +291,83 @@ export default function UploadPanel({
           </>
         )}
       </div>
+
+      {busy && stage >= 0 && (
+        <div
+          role="status"
+          aria-live="polite"
+          aria-label="简历解析进度"
+          style={{
+            marginTop: 14,
+            padding: "14px 16px",
+            background: "var(--wiki-bg-alt, #f8f9fa)",
+            border: "1px solid var(--wiki-border, #c8ccd1)",
+            borderRadius: 4,
+          }}
+        >
+          <ul
+            style={{
+              listStyle: "none",
+              margin: 0,
+              padding: 0,
+              display: "flex",
+              flexDirection: "column",
+              gap: 6,
+            }}
+          >
+            {PARSE_STAGES.map((label, i) => {
+              const isDone = i < stage;
+              const isActive = i === stage;
+              const dot = isDone || isActive ? "●" : "○";
+              // 维基百科链接蓝表示进行中；done 用正文黑；pending 用 soft 灰
+              const color = isActive
+                ? "#36c"
+                : isDone
+                ? "var(--wiki-text, #202122)"
+                : "var(--wiki-text-soft, #72777d)";
+              return (
+                <li
+                  key={label}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    fontSize: 13,
+                    lineHeight: 1.5,
+                    color,
+                    fontWeight: isActive ? 600 : 400,
+                  }}
+                >
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      fontSize: 14,
+                      lineHeight: 1,
+                      width: 14,
+                      textAlign: "center",
+                      flex: "0 0 auto",
+                    }}
+                  >
+                    {dot}
+                  </span>
+                  <span>{label}</span>
+                </li>
+              );
+            })}
+          </ul>
+          <div
+            style={{
+              marginTop: 12,
+              paddingTop: 10,
+              borderTop: "1px solid var(--wiki-border, #c8ccd1)",
+              fontSize: 12,
+              color: "var(--wiki-text-soft, #72777d)",
+            }}
+          >
+            约 20 秒。慢一点，内容更稳。
+          </div>
+        </div>
+      )}
 
       <details className="upload-fallback">
         <summary>没 PDF？或者 PDF 解析失败？粘贴一段文字试试</summary>
@@ -285,7 +393,7 @@ export default function UploadPanel({
           disabled={busy}
           className="setup-button-primary"
         >
-          {busy ? "正在读取…" : "解析并填好下方表单"}
+          {busy ? "正在解析…" : "解析并填好下方表单"}
         </button>
       )}
 
@@ -328,7 +436,7 @@ function humanizeParseError(raw) {
     return "PDF 读取失败，可能是加密或扫描件。导出为可选中文字的 PDF 再上传，或展开下方「没 PDF？」直接粘贴文字。";
   }
   if (/Request failed|fetch|network/i.test(msg)) {
-    return "网络请求失败，过几秒再点一次。";
+    return "网络请求失败，等 30 秒左右再试一次通常就好。";
   }
-  return msg || "解析失败，再试一次。";
+  return msg || "这次没能完成解析，再试一次通常可以解决。";
 }
