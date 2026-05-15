@@ -425,9 +425,6 @@ export default function SetupForm() {
         body: "Lin Zhixia attended the School of Information Management at [[Wuhan_University|Wuhan University]] from 2022 to 2026, pursuing a B.S. in Information Management and Information Systems. Core coursework included database systems, information retrieval, data visualization, and user research methods. Her senior thesis examined how undergraduates discover books through Xiaohongshu, using 420 questionnaire responses drawn from six universities in Hubei province; the sampling frame was built off contacts she had accumulated running [[Wuhan_Reading_Club|the reading club]].",
         body_zh:
           "林知夏 2022 年到 2026 年在 [[Wuhan_University|武汉大学]] 信息管理学院读本科，专业是信息管理与信息系统。核心课程包括数据库系统、信息检索、数据可视化和用户研究方法。毕业论文研究的是大学生在小红书上发现图书的路径，样本来自湖北六所高校的 420 份问卷；问卷的发放渠道很大程度上是靠她做 [[Wuhan_Reading_Club|武大读书社]] 期间积累下来的跨校联系人。",
-        logo: "/example-photos/wuhan-university.jpg",
-        logo_caption: "Wuhan University campus, cherry blossom season",
-        logo_caption_zh: "武汉大学校园 · 樱花季",
       },
     ]);
 
