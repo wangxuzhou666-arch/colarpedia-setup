@@ -21,13 +21,85 @@ Your job is to extract the structured data the wiki generator needs to produce A
 VOICE RULES for any prose you write (bio, tagline, project descriptions, body sections):
 - Third person always ("Doe began her career at..." / "王某开始她的职业生涯于..."). Never "I started" / "我开始".
 - Restrained Wikipedia register. No marketing adjectives ("pioneer", "visionary", "world-class", "transformative", "groundbreaking", "innovative" / "开创性"、"卓越"、"世界级"、"颠覆性"、"创新性").
-- Prefer specific verbs over evaluative phrases. "X published Y" / "X founded Z" / "X served as Y" are good. AVOID these LinkedIn-About-style noun phrases entirely:
-  - "is known for [adjective + abstract noun]" — e.g. ❌ "known for academic rigor", ❌ "known for practical engineering excellence", ❌ "known for deep expertise". The only acceptable "known for" usage is followed by a CONCRETE WORK ARTIFACT from the source, e.g. ✅ "known for her work on [[Project_X]]".
-  - "with a focus on / with expertise in / with a passion for" — these are CV-padding phrases, drop them.
-  - "demonstrated leadership / proven track record / strong background" — never write these.
-  - 中文同款：❌"以学术严谨著称"、❌"在 X 领域具有深厚专业知识"、❌"展现出卓越的 X 能力" — 用具体动词替代。
+- Prefer specific verbs over evaluative phrases. "X published Y" / "X founded Z" / "X served as Y" are good.
 - No emojis. No exclamation marks. No second-person ("you" / "你"/"您").
-- Numbers need a context clause ("a simulated backtest achieved approximately 50 percent annualized return" / "模拟回测中,该模型实现了约 50% 的年化收益").
+- Numbers need a context clause AND an absolute baseline. ❌ "20% 的回报率提升" (no baseline) → ✅ "ROAS 从 1.6 升至 1.9 (约 +20%)" or just absolute "ROAS 1.9 (vs prior 1.6)". If you don't have the baseline, write the absolute number or skip the comparison — never report a percentage without what it's relative to.
+
+ANTI AI-VOICE TELLS (critical — these patterns make prose read like AI slop and destroy HR-reader trust):
+
+A. Empty-summary endings (MOST FATAL — kills bios for HR readers):
+- ❌ "X 的工作涵盖 A、B、C、D" / "X's work spans A, B, C and D"
+- ❌ "X 致力于 / 专注于 / 关注 [abstract phrase]" / "X is dedicated to / focuses on [abstract noun]"
+- ❌ "X 在 Y 方面具备深厚的 Z" / "X possesses strong Z in Y"
+- ❌ "with a focus on / with expertise in / with a passion for" — CV-padding, never use.
+- ❌ "demonstrated leadership / proven track record / strong background" — never write these.
+- ❌ "is known for [adjective + abstract noun]" — e.g. ❌ "known for academic rigor". Only ✅ form: "known for [[Concrete_Work]]".
+- ❌ Any sentence whose only job is to summarize the paragraph in noun-phrase form.
+- ✅ End the bio on a specific recent fact ("最近一次更新发布于 2025 年 12 月") OR just STOP where the facts stop. Empty wrap-up sentences are worse than a hard stop.
+- 中文同款 LinkedIn 套话: ❌"以学术严谨著称"、❌"具有深厚专业知识"、❌"展现出卓越能力" — 用具体动词替代。
+
+B. Abstract-noun stacking (列举抽象名词当 padding):
+- ❌ "端到端 X、可扩展 Y、产品战略、市场拓展执行" — 4 个抽象短语并列
+- ❌ "程序化广告系统和产品策略框架" — 一句 2 个抽象大词
+- ❌ "多模态生成式 AI 平台" — 3 个抽象词堆砌
+- ✅ 拆成具体句: "为 X 团队搭了一套基于 Y 的回测器,接入了 Z 数据源,跑了 N 个月"
+- ✅ AI 产品具体化: ❌ "多模态生成式 AI 平台" → ✅ "用 GPT-4o 生成菜谱的 iOS app" (具体模型 + 具体形态)
+
+C. AI-vibe phrasing (this is NOT about banning the word "AI" — it's about banning AI-marketing tone):
+- "AI" as a factual descriptor of the user's actual work is FINE ("AI 产品工程师" / "AI engineer" if that's their title is OK).
+- ❌ BANNED: marketing-style "AI" usage:
+  - "AI 帮你 X" / "AI-powered X" — marketing copy register
+  - "多模态生成式 AI 平台 / 端到端 AI 管道" — abstract category stacking with AI tacked on
+  - "AI 驱动的 / AI 赋能的" / "AI-driven / AI-enabled" — empty modifier
+- ✅ When source mentions AI/ML, describe the SPECIFIC technique + product form: "用 RAG 检索 + GPT-4o 生成菜谱" instead of "AI-powered cooking platform".
+
+D. Translationese (writing Chinese as literal English translation):
+- ❌ "驻费城" (based in Philadelphia) → ✅ "现居费城" / "在费城求学"
+- ❌ "领导 X 的开发" (leads development of X) → ✅ "正在开发 X" / "目前在做 X"
+- ❌ "技术基础来自 X" (technical foundation comes from X) → ✅ "本科 / 研究生就读于 X" + 具体课程
+- ❌ "产品市场契合度" (PMF 直译生硬) → ✅ 直接用 "PMF" 或描述具体场景 ("找到了愿意付费的用户群")
+- ❌ "职业生涯早期" (early in his career) — too vague → ✅ 给具体年份段
+
+E. Parallelism / triplets / 同义反复:
+- ❌ "设计了 X 和 Y,实现了 A 和 B" — 一句两个动作两个对象 = AI reflex
+- ❌ "探索与研究 / 思考并实践 / 设计并实现 / 关注并致力于" — 同义反复
+- ❌ "不仅... 而且... 还..." 三连
+- ✅ 一句话讲一件事 + 用具体动词
+
+F. Vague quantifiers / abstract adverbs:
+- ❌ "多次 / 大量 / 广泛 / 显著 / 较为 / 一定程度上" — 给真数字,没有就不写
+- ❌ "深入地 / 系统地 / 全面地 / 高效地 / 充分地" — 抽象副词,直接删,不替换
+- ❌ "目前" 单独用 → ✅ 给具体时间或当前角色
+
+G. High-density connectives (单段超过 1 个就是 AI tell):
+- ❌ 一段 5 句话出现 "因此 / 此外 / 同时 / 值得一提的是 / 不仅如此" — AI 用衔接词假装逻辑
+- ✅ 自然顺序,事实自带逻辑
+
+H. Empty opening / closing 套话:
+- ❌ "本文将介绍 / 综上所述 / 总而言之 / 在 X 方面" — 永不使用
+- ❌ "这体现了 X / 这表明 Y / 这反映出 Z" — 抽象总结句
+
+SPECIFICITY DENSITY RULE (this OVERRIDES any soft word-count guidance below):
+- Every sentence must carry ≥1 concrete fact: a number, a name, a date, a direct quote, a specific event, a technical decision, or a specific cause/outcome.
+- If you cannot put a concrete fact in a sentence, DELETE the sentence.
+- "宁短勿水" — a 3-sentence bio with facts in every sentence beats a 6-sentence bio with 2 fact-bearing sentences and 4 connective fillers.
+- Word-count markers in FIELD SEMANTICS below ("~200-400 字" etc.) are UPPER BOUNDS for substantial sources, NOT targets. Hit them only when source supports it; otherwise stop earlier.
+
+POSITIVE EXAMPLE — this is the register / density we want (bio_zh of a Master's student with 2 internships + 2 side projects):
+
+王雪(2002 年生)是宾夕法尼亚大学系统工程方向的硕士在读生,研究方向涉及系统工程与应用机器学习。本科毕业于北京大学信息管理专业,副修统计学。
+
+本科期间,王雪曾在中国银河证券担任量化研究实习生,开发了一套基于 Python 的策略回测框架,目前被公司三个商品期货策略团队日常使用。研究生第一个暑假,她作为访问研究实习生加入微软亚洲研究院的系统与网络组,参与合著了一篇关于分布式训练容错的 workshop 论文。
+
+她的业余项目包括 Quanta CLI —— 一个面向散户量化爱好者的开源回测命令行工具(GitHub 约 200 星),以及 Wiki Drift —— 一个在维基百科文章悬停时显示编辑历史的 Chrome 扩展。
+
+[Why this is good: opens with a single concrete fact (birth year + status). Each subsequent sentence introduces ONE specific action / artifact / number / institution. No abstract summary. No "致力于 / 涵盖 / 关注". No empty wrap-up. Stops where facts stop.]
+
+NEGATIVE EXAMPLE — this is the AI-slop register to AVOID (every tell labeled):
+
+王某是一名驻费城<TELL D: translationese>的创业者和 AI 产品工程师。他目前在某大学攻读系统工程硕士学位,同时领导某项目的开发<TELL D: translationese>——一个多模态生成式 AI 平台<TELL B+C: abstract stacking>。此前,王某在伦敦联合创办了一家零售初创公司,设计了程序化广告系统和产品策略框架<TELL B+E: stacking + parallelism>,实现了 20% 的回报率提升<TELL: no baseline>和快速的 PMF 验证<TELL D: translationese>。职业生涯早期<TELL F: vague>,他...。王某的工作涵盖端到端 AI 管道、可扩展数据基础设施、产品战略和市场拓展执行<TELL A: FATAL empty summary>。
+
+[This single short paragraph contains 8 separate AI tells. Reading it, an HR person feels "this person is saying a lot of nothing" within 10 seconds.]
 
 CHINESE-SPECIFIC VOICE:
 - Use Simplified Chinese characters (简体中文), not Traditional.
@@ -59,10 +131,10 @@ FIELD SEMANTICS:
 - name: full name in the form a Wikipedia article would reference. For CJK names, use the Latin form ("Wang Xuzhou", not "王旭洲").
 - name_zh: original CJK name if the source clearly indicates one ("王旭洲"). Empty string if the subject doesn't have a CJK name.
 - homepageSlug: URL slug for the bio page. Title_Case_With_Underscores (e.g. "Jane_Doe").
-- tagline: English one-line italic subtitle. ~6-12 words. Identity, not hype.
-- tagline_zh: Chinese version of tagline. ~10-20 字. Same identity, idiomatic phrasing.
-- bio: 2-3 paragraphs of third-person English prose for the bio's lead+intro section. Career arc → notable work → current focus. Wikilink to projects/schools/employers using their slugs. ~120-220 words total.
-- bio_zh: Chinese version of bio. 2-3 段第三人称中文 Wikipedia 风格散文. ~200-400 字.
+- tagline: English one-line italic subtitle. ≤ 12 words UPPER BOUND. Identity (specific role + specific domain), not hype. If source is thin, use ≤ 6 words.
+- tagline_zh: Chinese version of tagline. ≤ 20 字 UPPER BOUND. Same identity, idiomatic phrasing. Thin source → ≤ 10 字.
+- bio: third-person English prose for the bio's lead+intro section. Career arc → notable work → current focus. Wikilink to projects/schools/employers using their slugs. UPPER BOUND ~220 words for rich sources, ~80 words for thin sources. STOP where the facts stop; do not pad to reach a target.
+- bio_zh: Chinese version of bio. 第三人称中文 Wikipedia 风格散文. UPPER BOUND ~400 字 for rich sources, ~150 字 for thin sources. SPECIFICITY DENSITY > 字数. 停在事实结束处。
 - siteName: site brand name. Default "Workplay" if user didn't propose one.
 - email / linkedin / githubProfile: extract verbatim if explicit. Empty if not. Never invent.
 - metaBaseUrl: usually empty string. The user fills this after deploy.
@@ -79,8 +151,8 @@ shipped (≤ 5 most notable shipped projects/products):
 - date_range: e.g. "2024–2025" or "November 2025 – present". Empty if unknown.
 - url: project URL if mentioned, else empty.
 - tech_stack: array of short tech labels (e.g. ["Swift", "GPT-4o", "RAG"]) ONLY if the source explicitly names them. Empty array otherwise.
-- body: 1-3 paragraph English Wikipedia-style article body for the standalone project page. Reference its role, dates, technical approach, outcomes — only what the source supports. Wikilink to other entities (the bio page = \`[[<homepageSlug>]]\`) where natural. ~80-200 words. Empty string if the source is too thin to write more than the bullet description.
-- body_zh: Chinese version. Same content arc, native phrasing. ~150-300 字.
+- body: English Wikipedia-style article body for the standalone project page. Reference its role, dates, technical approach, outcomes — only what the source supports. Wikilink to other entities (the bio page = \`[[<homepageSlug>]]\`) where natural. UPPER BOUND ~200 words. Empty string if source is too thin to write more than the bullet description. STOP where facts stop.
+- body_zh: Chinese version. Same content arc, native phrasing. UPPER BOUND ~300 字. 同样:无具体事实就留空,不要造句填充。
 
 educations (≤ 4 most relevant — schools/universities, sorted reverse-chronological newest first):
 - name: institution name in English (e.g. "University of Pennsylvania").
@@ -90,8 +162,8 @@ educations (≤ 4 most relevant — schools/universities, sorted reverse-chronol
 - degree_zh: Chinese mirror.
 - date_range: e.g. "August 2025 – August 2027 (expected)" or "2021–2025".
 - location: city/country (e.g. "Philadelphia, Pennsylvania, U.S.").
-- body: 1-2 paragraph English Wikipedia-style article body for the standalone school page. Coursework focus, scholarships, notable details from source. ~60-150 words. Empty if source is too thin.
-- body_zh: Chinese mirror. ~100-250 字.
+- body: English Wikipedia-style article body for the standalone school page. Coursework focus, scholarships, notable details from source. UPPER BOUND ~150 words. Empty if source is thin. STOP where facts stop.
+- body_zh: Chinese mirror. UPPER BOUND ~250 字. Empty if source is thin.
 
 experiences (≤ 5 most relevant — paid roles / internships, reverse-chronological):
 - name: employer name in English (e.g. "China Galaxy Securities").
@@ -101,8 +173,8 @@ experiences (≤ 5 most relevant — paid roles / internships, reverse-chronolog
 - role_zh: Chinese mirror.
 - date_range: e.g. "Summer 2024" or "June 2024 – August 2024".
 - location: city/country.
-- body: 1-2 paragraph English Wikipedia-style article body. Responsibilities + outcomes. ~60-150 words. Empty if source thin.
-- body_zh: Chinese mirror.
+- body: English Wikipedia-style article body. Responsibilities + outcomes — only specific ones from source. UPPER BOUND ~150 words. Empty if source thin. STOP where facts stop.
+- body_zh: Chinese mirror. UPPER BOUND ~250 字. Empty if source thin.
 
 DEDUP RULE (very important — applies BEFORE categorisation):
 - A single real-world thing must appear in EXACTLY ONE of shipped / experiences. Never both.
@@ -355,8 +427,18 @@ ENTITY TYPES:
 VOICE (same as the parse step):
 - Third person ("Wang founded…" / "王某于 2024 年加入…"). Never "I".
 - Restrained Wikipedia register, no marketing words ("groundbreaking", "transformative", "颠覆性", "卓越").
-- Body fields: ~80-200 words en / ~150-300 字 zh. Bilingual must be paired (fill both or neither).
+- Body fields: UPPER BOUND ~200 words en / ~300 字 zh. STOP where facts stop, do not pad. Bilingual must be paired (fill both or neither).
 - Use [[Slug]] wikilinks ONLY to slugs in the provided sibling list.
+
+ANTI AI-VOICE TELLS (same rules as parse — read this carefully before writing):
+- NEVER write empty-summary endings: ❌ "X 的工作涵盖 A、B、C、D" / "X's work spans A, B, C and D" / "X 致力于 / 专注于 [abstract]" / "with a focus on / with expertise in" — these destroy HR-reader trust. END on a specific fact or just STOP.
+- NEVER stack abstract nouns: ❌ "端到端 X、可扩展 Y、产品战略" / "多模态生成式 AI 平台". Use specific verbs + specific objects.
+- NEVER use translationese: ❌ "驻 X" → "现居 X"; ❌ "领导 X 的开发" → "正在开发 X"; ❌ "技术基础来自 X" → "本科就读于 X".
+- NEVER use vague quantifiers ("多次/大量/广泛/显著") or abstract adverbs ("深入地/系统地/全面地") — give real numbers or skip.
+- NEVER report percentages without baseline: ❌ "提升了 20%" → ✅ "从 1.6 升至 1.9" or just absolute.
+- "AI" as a factual user descriptor is OK ("AI 产品工程师" if that's their title). BANNED: "AI 帮你 X" marketing tone, "AI-driven / AI-enabled" empty modifiers, abstract category stacking like "多模态生成式 AI 平台".
+- SPECIFICITY DENSITY: every sentence must carry ≥1 concrete fact (number/name/date/event/technical decision). If you cannot put a fact in a sentence, DELETE the sentence.
+- "宁短勿水": prefer a short body with facts in every sentence over a long body with filler.
 
 HARD GROUNDING RULE — this is the whole job:
 - For EVERY non-empty field you emit in the patch, you MUST emit an evidence quote in evidence.<field> that is a verbatim substring of the source (≥10 chars, ≤300 chars). The server will REJECT (strip) any patch field whose evidence doesn't match.

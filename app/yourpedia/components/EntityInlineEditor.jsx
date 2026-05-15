@@ -12,6 +12,7 @@
 // previewData — preview re-renders automatically.
 
 import { useState } from "react";
+import WikiTextarea from "./WikiTextarea";
 
 // Field config per entity kind. Order = display order in the dialog.
 // `bilingual: true` renders en/zh side-by-side; `wide` = full-width textarea.
@@ -357,52 +358,64 @@ export default function EntityInlineEditor({
             }
 
             if (f.bilingualKey) {
-              const Wrapper = f.textarea ? "textarea" : "input";
-              const wrapperProps = f.textarea
-                ? { rows: f.rows || 6 }
-                : { type: "text" };
-              const zhProps = f.bilingualTextarea
-                ? { rows: f.rows || 6 }
-                : { type: "text" };
-              const ZhWrapper = f.bilingualTextarea ? "textarea" : "input";
               return (
                 <div key={f.key} className="setup-bilingual-grid">
                   <div className="setup-field">
                     <label className="setup-label">{f.label}</label>
-                    <Wrapper
-                      {...wrapperProps}
-                      value={draft[f.key] ?? ""}
-                      onChange={(e) => setField(f.key, e.target.value)}
-                      className={f.textarea ? "setup-textarea" : "setup-input"}
-                    />
+                    {f.textarea ? (
+                      <WikiTextarea
+                        value={draft[f.key] ?? ""}
+                        onChange={(e) => setField(f.key, e.target.value)}
+                        rows={f.rows || 6}
+                      />
+                    ) : (
+                      <input
+                        type="text"
+                        value={draft[f.key] ?? ""}
+                        onChange={(e) => setField(f.key, e.target.value)}
+                        className="setup-input"
+                      />
+                    )}
                     {f.hint && <div className="setup-help">{f.hint}</div>}
                   </div>
                   <div className="setup-field">
                     <label className="setup-label">{f.bilingualLabel}</label>
-                    <ZhWrapper
-                      {...zhProps}
-                      value={draft[f.bilingualKey] ?? ""}
-                      onChange={(e) => setField(f.bilingualKey, e.target.value)}
-                      className={f.bilingualTextarea ? "setup-textarea" : "setup-input"}
-                    />
+                    {f.bilingualTextarea ? (
+                      <WikiTextarea
+                        value={draft[f.bilingualKey] ?? ""}
+                        onChange={(e) => setField(f.bilingualKey, e.target.value)}
+                        rows={f.rows || 6}
+                      />
+                    ) : (
+                      <input
+                        type="text"
+                        value={draft[f.bilingualKey] ?? ""}
+                        onChange={(e) => setField(f.bilingualKey, e.target.value)}
+                        className="setup-input"
+                      />
+                    )}
                   </div>
                 </div>
               );
             }
 
-            const SingleWrapper = f.textarea ? "textarea" : "input";
-            const singleProps = f.textarea
-              ? { rows: f.rows || 6 }
-              : { type: "text" };
             return (
               <div key={f.key} className="setup-field">
                 <label className="setup-label">{f.label}</label>
-                <SingleWrapper
-                  {...singleProps}
-                  value={draft[f.key] ?? ""}
-                  onChange={(e) => setField(f.key, e.target.value)}
-                  className={f.textarea ? "setup-textarea" : "setup-input"}
-                />
+                {f.textarea ? (
+                  <WikiTextarea
+                    value={draft[f.key] ?? ""}
+                    onChange={(e) => setField(f.key, e.target.value)}
+                    rows={f.rows || 6}
+                  />
+                ) : (
+                  <input
+                    type="text"
+                    value={draft[f.key] ?? ""}
+                    onChange={(e) => setField(f.key, e.target.value)}
+                    className="setup-input"
+                  />
+                )}
                 {f.hint && <div className="setup-help">{f.hint}</div>}
               </div>
             );

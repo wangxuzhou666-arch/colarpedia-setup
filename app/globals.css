@@ -600,6 +600,37 @@ ol.references li { margin-bottom: 4px; }
   font-size: 14px;
 }
 
+.wiki-textarea-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.wiki-textarea-display {
+  cursor: text;
+  background: var(--wiki-bg);
+  transition: border-color 0.1s;
+}
+.wiki-textarea-display:hover {
+  border-color: var(--wiki-link);
+}
+.wiki-textarea-display:focus {
+  outline: 1px solid var(--wiki-link);
+  outline-offset: -1px;
+  border-color: var(--wiki-link);
+}
+.wiki-textarea-mode-hint {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  color: var(--wiki-text-soft);
+  line-height: 1.4;
+}
+.wiki-textarea-mode-hint code {
+  font-size: 10.5px;
+  background: var(--wiki-bg-alt);
+  padding: 1px 4px;
+  border-radius: 2px;
+}
+
 .setup-help {
   font-family: var(--font-sans);
   font-size: 11px;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSession, signIn, signOut } from "next-auth/react";
@@ -8,6 +8,7 @@ import { setupSchema, deriveSlug } from "../lib/schema";
 import { getSupabaseBrowserClient } from "../../../lib/supabase/client";
 import UploadPanel from "./UploadPanel";
 import PreviewModal from "./PreviewModal";
+import WikiTextarea from "./WikiTextarea";
 
 // 项目缩略图的 slug 兜底——项目还没填名字时用 project_<idx>，
 // 这样用户先传图后填名也不会丢图。
@@ -768,13 +769,21 @@ export default function SetupForm() {
 
         <div className="setup-field">
           <label htmlFor="field-bio-zh" className="setup-label">个人简介</label>
-          <textarea
-            id="field-bio-zh"
-            aria-describedby="field-bio-zh-help"
-            {...register("bio_zh")}
-            rows={5}
-            className="setup-textarea"
-            placeholder="用第三人称写几段话介绍你自己，像维基百科一样。例如：王雪是宾夕法尼亚大学系统工程方向的硕士在读生..."
+          <Controller
+            control={control}
+            name="bio_zh"
+            render={({ field }) => (
+              <WikiTextarea
+                id="field-bio-zh"
+                value={field.value}
+                onChange={(e) => field.onChange(e.target.value)}
+                onBlur={field.onBlur}
+                inputRef={field.ref}
+                rows={5}
+                placeholder="用第三人称写几段话介绍你自己，像维基百科一样。例如：王雪是宾夕法尼亚大学系统工程方向的硕士在读生..."
+                aria-describedby="field-bio-zh-help"
+              />
+            )}
           />
           <div id="field-bio-zh-help" className="setup-help">
             用<strong>第三人称</strong>撰写（例："王雪是..."），更像维基百科风格。
@@ -829,11 +838,19 @@ export default function SetupForm() {
             </div>
             <div className="setup-field">
               <label className="setup-label">英文简介（bio）</label>
-              <textarea
-                {...register("bio")}
-                rows={4}
-                className="setup-textarea"
-                placeholder="Write your story in third person, Wikipedia-style..."
+              <Controller
+                control={control}
+                name="bio"
+                render={({ field }) => (
+                  <WikiTextarea
+                    value={field.value}
+                    onChange={(e) => field.onChange(e.target.value)}
+                    onBlur={field.onBlur}
+                    inputRef={field.ref}
+                    rows={4}
+                    placeholder="Write your story in third person, Wikipedia-style..."
+                  />
+                )}
               />
             </div>
           </details>
