@@ -49,6 +49,34 @@ function fileToBase64(file) {
   });
 }
 
+// 表单字段的初始空值——抽出来给 reset() 和 useForm 共用,避免登录跳转后
+// localStorage 恢复出来的草稿缺字段时报错。photoFile / pdfFile 是 File
+// state 不在这里(localStorage 不存 binary),用户登录回来需要重新上传文件,
+// 但文字数据完整恢复。
+const SETUP_DEFAULTS = {
+  name: "",
+  name_zh: "",
+  homepageSlug: "",
+  tagline: "",
+  tagline_zh: "",
+  bio: "",
+  bio_zh: "",
+  siteName: "Workplay",
+  metaBaseUrl: "",
+  githubOwner: "",
+  githubRepo: "",
+  email: "",
+  linkedin: "",
+  githubProfile: "",
+  shipped: [],
+  educations: [],
+  experiences: [],
+};
+
+// localStorage 草稿 key — 改版本号(v2 等)可强制旧用户重新填表,
+// 防止 schema 升级后旧草稿格式不兼容。
+const PERSIST_KEY = "workplay-setup-draft-v1";
+
 const PHOTO_EXT_BY_TYPE = {
   "image/jpeg": "jpg",
   "image/jpg": "jpg",
@@ -194,29 +222,12 @@ export default function SetupForm() {
     control,
     watch,
     setValue,
+    reset,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(setupSchema),
     mode: "onTouched",
-    defaultValues: {
-      name: "",
-      name_zh: "",
-      homepageSlug: "",
-      tagline: "",
-      tagline_zh: "",
-      bio: "",
-      bio_zh: "",
-      siteName: "Workplay",
-      metaBaseUrl: "",
-      githubOwner: "",
-      githubRepo: "",
-      email: "",
-      linkedin: "",
-      githubProfile: "",
-      shipped: [],
-      educations: [],
-      experiences: [],
-    },
+    defaultValues: SETUP_DEFAULTS,
   });
 
   const { fields, append, remove, replace } = useFieldArray({
@@ -235,6 +246,48 @@ export default function SetupForm() {
     remove: removeExp,
     replace: replaceExp,
   } = useFieldArray({ control, name: "experiences" });
+
+  // 启动时从 localStorage 恢复草稿——magic link / GitHub OAuth 登录跳转后,
+  // 页面会完整 reload,React state 全清空,如果不持久化用户填的内容就丢了。
+  // 用 ref 防止 reset 后 watch listener 把恢复出的值又写回 storage 触发循环。
+  const persistedRestoredRef = useRef(false);
+  useEffect(() => {
+    if (persistedRestoredRef.current) return;
+    persistedRestoredRef.current = true;
+    try {
+      const raw = typeof window !== "undefined"
+        ? window.localStorage.getItem(PERSIST_KEY)
+        : null;
+      if (!raw) return;
+      const saved = JSON.parse(raw);
+      if (saved && typeof saved === "object") {
+        reset({ ...SETUP_DEFAULTS, ...saved });
+      }
+    } catch (e) {
+      console.warn("[setup] 草稿恢复失败:", e);
+    }
+  }, [reset]);
+
+  // 表单变化时防抖写入 localStorage(300ms),让登录跳转回来能恢复。
+  // 不存 photoFile / pdfFile / projectThumbs(File 对象无法 JSON 序列化),
+  // 用户登录回来需要重新上传文件,但表单文字数据完整。
+  useEffect(() => {
+    let timer = null;
+    const sub = watch((values) => {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        try {
+          window.localStorage.setItem(PERSIST_KEY, JSON.stringify(values));
+        } catch (e) {
+          // quota / SecurityError / 隐私模式 — 不阻塞表单
+        }
+      }, 300);
+    });
+    return () => {
+      clearTimeout(timer);
+      sub.unsubscribe();
+    };
+  }, [watch]);
 
   const nameValue = watch("name");
   const [slugTouched, setSlugTouched] = useState(false);
@@ -703,6 +756,8 @@ export default function SetupForm() {
       }
       setDeployResult(json);
       setDeployStep("done");
+      // publish 成功后清掉草稿,避免下次回到 setup 又恢复出旧数据
+      try { window.localStorage.removeItem(PERSIST_KEY); } catch (e) {}
     } catch (e) {
       setDeployError(humanizeDeployError(e.message));
       setDeployStep("error");
