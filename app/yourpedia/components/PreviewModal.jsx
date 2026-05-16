@@ -161,6 +161,27 @@ export default function PreviewModal({
     [currentSlug, data]
   );
 
+  // Lookup the polish target for the entity currently shown — drives
+  // the in-page edit bar above the infobox. Bio has no inline-editor,
+  // so this resolves to null on the bio page.
+  const currentTarget = useMemo(() => {
+    if (pageData.kind === "bio") return null;
+    const section = {
+      shipped: "shipped",
+      education: "educations",
+      experience: "experiences",
+    }[pageData.kind];
+    if (!section) return null;
+    const idx = (data[section] || []).findIndex(
+      (e) => e?.slug === currentSlug
+    );
+    if (idx < 0) return null;
+    return (
+      polishTargets.find((t) => t.section === section && t.idx === idx) ||
+      null
+    );
+  }, [pageData, currentSlug, data, polishTargets]);
+
   // Reset to bio if the current selection disappears (e.g. user
   // removed that row from the form mid-preview).
   useEffect(() => {
@@ -386,39 +407,50 @@ export default function PreviewModal({
   }
 
   // ---- Sidebar sections ----
+  // sectionName / idx carried alongside item so nav can expose a
+  // per-item "编辑" hover affordance straight into EntityInlineEditor.
+  // Bio has sectionName: null because bio is edited from SetupForm,
+  // not via the inline editor.
   const navSections = [
     {
       heading: isZh ? "传记" : "Biography",
+      sectionName: null,
       items: data.homepageSlug
-        ? [{ slug: data.homepageSlug, label: data.name || "[bio]" }]
+        ? [{ slug: data.homepageSlug, label: data.name || "[bio]", idx: 0 }]
         : [],
     },
     {
       heading: isZh ? "代表作品" : "Notable works",
+      sectionName: "shipped",
       items: (data.shipped || [])
-        .filter((s) => s.slug)
-        .map((s) => ({
+        .map((s, i) => ({
           slug: s.slug,
           label: (isZh && s.name_zh ? s.name_zh : s.name) || s.slug,
-        })),
+          idx: i,
+        }))
+        .filter((item) => item.slug),
     },
     {
       heading: isZh ? "工作经历" : "Experience",
+      sectionName: "experiences",
       items: (data.experiences || [])
-        .filter((e) => e.slug)
-        .map((e) => ({
+        .map((e, i) => ({
           slug: e.slug,
           label: (isZh && e.name_zh ? e.name_zh : e.name) || e.slug,
-        })),
+          idx: i,
+        }))
+        .filter((item) => item.slug),
     },
     {
       heading: isZh ? "教育背景" : "Education",
+      sectionName: "educations",
       items: (data.educations || [])
-        .filter((e) => e.slug)
-        .map((e) => ({
+        .map((e, i) => ({
           slug: e.slug,
           label: (isZh && e.name_zh ? e.name_zh : e.name) || e.slug,
-        })),
+          idx: i,
+        }))
+        .filter((item) => item.slug),
     },
   ].filter((s) => s.items.length > 0);
 
@@ -479,10 +511,9 @@ export default function PreviewModal({
         {showAudit && totalSuggestions > 0 && (
           <div className="preview-audit-panel" role="region" aria-label="Completeness suggestions">
             <div className="preview-audit-header">
-              <strong>想让 wiki 更丰富？</strong>
+              <strong>改进建议</strong>
               <span className="preview-audit-sub">
-                每条经历有两种修补方式：<em>✏️ 编辑</em>手动改 AI 生成的内容，或
-                <em>📎 PDF 补充</em>再传一份 PDF 让 AI 自动补缺。
+                每条经历都能直接编辑，或再传一份 PDF 让缺失字段自动补齐。
               </span>
             </div>
 
@@ -516,15 +547,15 @@ export default function PreviewModal({
                         onClick={() => setInlineEditOpen({ section: t.section, idx: t.idx })}
                         title={`直接手动改 ${ent.name} 的字段`}
                       >
-                        ✏️ 编辑
+                        编辑
                       </button>
                       <button
                         type="button"
                         className="preview-audit-action-btn is-secondary"
                         onClick={() => setGapFillOpen(t)}
-                        title={`再传一份 PDF / 粘贴文字，让 AI 补全 ${ent.name} 的字段`}
+                        title={`再传一份 PDF / 粘贴文字，自动补全 ${ent.name} 的字段`}
                       >
-                        📎 PDF 补充
+                        补充 PDF
                       </button>
                     </div>
                   );
@@ -610,15 +641,34 @@ export default function PreviewModal({
                 <ul>
                   {section.items.map((item) => (
                     <li key={item.slug}>
-                      <button
-                        type="button"
-                        className={`preview-nav-item ${
-                          currentSlug === item.slug ? "is-active" : ""
-                        }`}
-                        onClick={() => setCurrentSlug(item.slug)}
-                      >
-                        {item.label}
-                      </button>
+                      <div className="preview-nav-item-row">
+                        <button
+                          type="button"
+                          className={`preview-nav-item ${
+                            currentSlug === item.slug ? "is-active" : ""
+                          }`}
+                          onClick={() => setCurrentSlug(item.slug)}
+                        >
+                          {item.label}
+                        </button>
+                        {section.sectionName && onApplyPolish && (
+                          <button
+                            type="button"
+                            className="preview-nav-item-edit"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setInlineEditOpen({
+                                section: section.sectionName,
+                                idx: item.idx,
+                              });
+                            }}
+                            title={`编辑 ${item.label}`}
+                            aria-label={`编辑 ${item.label}`}
+                          >
+                            编辑
+                          </button>
+                        )}
+                      </div>
                     </li>
                   ))}
                 </ul>
@@ -630,6 +680,41 @@ export default function PreviewModal({
             <main className="wiki-main preview-wiki-main">
               <h1 className="wiki-title">{pageTitle || "[暂未命名]"}</h1>
               {pageSubtitle && <p className="wiki-title-sub">{pageSubtitle}</p>}
+              {currentTarget && onApplyPolish && (
+                <div
+                  className="wiki-edit-bar"
+                  role="toolbar"
+                  aria-label="编辑此页"
+                >
+                  <button
+                    type="button"
+                    className="wiki-edit-bar-action"
+                    onClick={() =>
+                      setInlineEditOpen({
+                        section: currentTarget.section,
+                        idx: currentTarget.idx,
+                      })
+                    }
+                  >
+                    编辑此页
+                  </button>
+                  <span className="wiki-edit-bar-sep" aria-hidden="true">
+                    ·
+                  </span>
+                  <button
+                    type="button"
+                    className="wiki-edit-bar-action is-secondary"
+                    onClick={() => setGapFillOpen(currentTarget)}
+                  >
+                    再传一份 PDF 自动补缺
+                  </button>
+                  {currentTarget.flaggedCount > 0 && (
+                    <span className="wiki-edit-bar-gap">
+                      还缺 {currentTarget.flaggedCount} 项
+                    </span>
+                  )}
+                </div>
+              )}
               {infoboxJsx}
               <ReactMarkdown
                 remarkPlugins={[remarkGfm]}

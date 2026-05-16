@@ -1599,6 +1599,91 @@ details.setup-section > summary > .setup-section-heading,
   color: var(--wiki-text);
   font-weight: 600;
 }
+
+/* Row wrapper so we can expose a per-item "编辑" affordance on hover.
+   The button is hidden by default and revealed when the row is hovered
+   (or the inner edit button is focused via keyboard). */
+.preview-nav-item-row {
+  display: flex;
+  align-items: stretch;
+  position: relative;
+}
+.preview-nav-item-row .preview-nav-item {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.preview-nav-item-edit {
+  flex: 0 0 auto;
+  background: none;
+  border: 0;
+  padding: 0 12px;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  color: var(--wiki-link);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 80ms;
+}
+.preview-nav-item-row:hover .preview-nav-item-edit,
+.preview-nav-item-edit:focus-visible {
+  opacity: 1;
+}
+.preview-nav-item-edit:hover {
+  text-decoration: underline;
+  background: var(--wiki-link-hover-bg);
+}
+@media (max-width: 720px) {
+  /* No hover on mobile — always show the edit affordance. */
+  .preview-nav-item-edit { opacity: 1; }
+}
+
+/* ===== Wiki edit bar (in-page inline edit entry above infobox) =====
+   Shown on entity pages (shipped / educations / experiences) so users
+   don't have to scroll back to the top yellow audit panel to find the
+   edit / PDF-补充 actions. */
+.wiki-edit-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 4px 0 18px;
+  padding: 6px 12px;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  background: var(--wiki-bg-alt);
+  border-left: 3px solid var(--wiki-link);
+  border-radius: 0 4px 4px 0;
+}
+.wiki-edit-bar-action {
+  background: none;
+  border: 0;
+  padding: 0;
+  font-family: inherit;
+  font-size: 12px;
+  color: var(--wiki-link);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.wiki-edit-bar-action:hover {
+  background: var(--wiki-link-hover-bg);
+}
+.wiki-edit-bar-action.is-secondary {
+  color: var(--wiki-text-soft);
+}
+.wiki-edit-bar-action.is-secondary:hover {
+  color: var(--wiki-link);
+}
+.wiki-edit-bar-sep {
+  color: var(--wiki-border);
+}
+.wiki-edit-bar-gap {
+  margin-left: auto;
+  font-size: 11px;
+  color: #b8860b;
+}
 .preview-content {
   overflow-y: auto;
   flex: 1;
